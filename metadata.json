@@ -1,0 +1,8 @@
+{
+  "name": "Smart Income",
+  "description": "Multi-Vertical Income Automation Platform. Enterprise-grade SaaS Platform architecture designed by a CTO. Integrates AI Hub, Automated Marketing, and a CRM to transform sales into a scalable system business.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
