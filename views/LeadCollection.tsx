@@ -144,6 +144,45 @@ const LandingPageGenerator: React.FC<{
     }
   };
 
+  const updateContent = (field: string, value: any) => {
+    setGeneratedContent((prev: any) => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const updateBenefit = (index: number, value: string) => {
+    const newBenefits = [...(generatedContent.benefits || [])];
+    newBenefits[index] = value;
+    updateContent('benefits', newBenefits);
+  };
+
+  const addBenefit = () => {
+    const newBenefits = [...(generatedContent.benefits || []), '새로운 혜택을 입력하세요'];
+    updateContent('benefits', newBenefits);
+  };
+
+  const removeBenefit = (index: number) => {
+    const newBenefits = (generatedContent.benefits || []).filter((_: any, i: number) => i !== index);
+    updateContent('benefits', newBenefits);
+  };
+
+  const updateTrustPoint = (index: number, value: string) => {
+    const newTrustPoints = [...(generatedContent.trustPoints || [])];
+    newTrustPoints[index] = value;
+    updateContent('trustPoints', newTrustPoints);
+  };
+
+  const addTrustPoint = () => {
+    const newTrustPoints = [...(generatedContent.trustPoints || []), '신뢰 포인트'];
+    updateContent('trustPoints', newTrustPoints);
+  };
+
+  const removeTrustPoint = (index: number) => {
+    const newTrustPoints = (generatedContent.trustPoints || []).filter((_: any, i: number) => i !== index);
+    updateContent('trustPoints', newTrustPoints);
+  };
+
   return (
     <div className="space-y-12">
       <div className="space-y-8">
@@ -216,23 +255,97 @@ const LandingPageGenerator: React.FC<{
                   </button>
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">헤드라인</label>
-                <p className="text-sm font-bold text-slate-800">{generatedContent.headline}</p>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">헤드라인</label>
+                  <Edit3 className="w-3 h-3 text-slate-300" />
+                </div>
+                <textarea 
+                  value={generatedContent.headline}
+                  onChange={(e) => updateContent('headline', e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-primary/10 resize-none h-20"
+                />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">서브 헤드라인</label>
-                <p className="text-xs text-slate-600">{generatedContent.subheadline}</p>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">서브 헤드라인</label>
+                  <Edit3 className="w-3 h-3 text-slate-300" />
+                </div>
+                <textarea 
+                  value={generatedContent.subheadline}
+                  onChange={(e) => updateContent('subheadline', e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-slate-600 focus:ring-2 focus:ring-primary/10 resize-none h-24"
+                />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">핵심 혜택</label>
-                <ul className="space-y-1">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">핵심 혜택</label>
+                  <button onClick={addBenefit} className="p-1 hover:bg-slate-100 rounded-full transition-colors">
+                    <Plus className="w-3 h-3 text-primary" />
+                  </button>
+                </div>
+                <div className="space-y-2">
                   {generatedContent.benefits?.map((b: string, i: number) => (
-                    <li key={i} className="text-xs text-slate-600 flex items-center gap-2">
-                      <CheckCircle2 className="w-3 h-3 text-accent" /> {b}
-                    </li>
+                    <div key={i} className="flex gap-2 group">
+                      <div className="flex-1 relative">
+                        <input 
+                          type="text"
+                          value={b}
+                          onChange={(e) => updateBenefit(i, e.target.value)}
+                          className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-600 focus:ring-2 focus:ring-primary/10"
+                        />
+                        <CheckCircle2 className="w-3 h-3 text-accent absolute left-3 top-1/2 -translate-y-1/2" />
+                      </div>
+                      <button 
+                        onClick={() => removeBenefit(i)}
+                        className="p-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
                   ))}
-                </ul>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">CTA 버튼 문구</label>
+                  <Edit3 className="w-3 h-3 text-slate-300" />
+                </div>
+                <input 
+                  type="text"
+                  value={generatedContent.cta}
+                  onChange={(e) => updateContent('cta', e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-primary/10"
+                />
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">신뢰 포인트</label>
+                  <button onClick={addTrustPoint} className="p-1 hover:bg-slate-100 rounded-full transition-colors">
+                    <Plus className="w-3 h-3 text-primary" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {generatedContent.trustPoints?.map((t: string, i: number) => (
+                    <div key={i} className="flex gap-1 group">
+                      <div className="flex-1 relative">
+                        <input 
+                          type="text"
+                          value={t}
+                          onChange={(e) => updateTrustPoint(i, e.target.value)}
+                          className="w-full pl-7 pr-2 py-2 bg-slate-50 border border-slate-100 rounded-lg text-[10px] text-slate-600 focus:ring-2 focus:ring-primary/10"
+                        />
+                        <ShieldCheck className="w-3 h-3 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2" />
+                      </div>
+                      <button 
+                        onClick={() => removeTrustPoint(i)}
+                        className="p-1 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <X className="w-2 h-2" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

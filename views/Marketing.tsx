@@ -6,6 +6,7 @@ import {
   generateGoldenTitles, 
   generateBlogPost,
   generateBlogImage,
+  rewriteBlogPostForFCPA,
   getGeminiKey,
   getOpenAIKey
 } from '../services/geminiService';
@@ -55,6 +56,7 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
   const [finalPost, setFinalPost] = useState<any>(null);
   const [finalImages, setFinalImages] = useState<string[]>([]);
   const [hasApiKey, setHasApiKey] = useState(true);
+  const [isFCPAProcessing, setIsFCPAProcessing] = useState(false);
 
   useEffect(() => {
     const checkKeys = () => {
@@ -174,6 +176,25 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFCPACompliance = async () => {
+    if (!finalPost) return;
+    setIsFCPAProcessing(true);
+    setLoading(true);
+    setLoadingStatus('금소법 가이드라인에 맞춰 원고를 재구성하고 있습니다...');
+    try {
+      const compliantPost = await rewriteBlogPostForFCPA(finalPost);
+      setFinalPost(compliantPost);
+      setSelectedTitle(compliantPost.finalTitle);
+      alert('금소법 가이드라인을 준수한 원고로 변경되었습니다.');
+    } catch (error: any) {
+      console.error(error);
+      alert('금소법 준수글 변환 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+      setIsFCPAProcessing(false);
     }
   };
 
@@ -616,6 +637,14 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
                   <h3 className="text-2xl font-bold text-primary tracking-tight">생성된 블로그 원고</h3>
                 </div>
                 <div className="flex flex-wrap gap-3">
+                  <button 
+                    onClick={handleFCPACompliance}
+                    disabled={isFCPAProcessing}
+                    className="px-6 py-3 bg-accent text-primary text-[11px] font-bold rounded-xl hover:bg-accent-dark transition-all shadow-lg shadow-accent/20 flex items-center gap-2 uppercase tracking-widest"
+                  >
+                    <ShieldCheck className={`w-4 h-4 ${isFCPAProcessing ? 'animate-spin' : ''}`} />
+                    <span>금소법 가이드 준수글 발행</span>
+                  </button>
                   <button 
                     onClick={handleCopyPost}
                     className="px-6 py-3 bg-primary text-white text-[11px] font-bold rounded-xl hover:bg-primary-light transition-all shadow-lg shadow-primary/20 flex items-center gap-2 uppercase tracking-widest"

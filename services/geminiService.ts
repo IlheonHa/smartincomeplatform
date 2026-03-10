@@ -444,6 +444,78 @@ export const generateBlogImage = async (prompt: string) => {
   return null;
 };
 
+export const rewriteBlogPostForFCPA = async (post: any) => {
+  checkAIAvailability();
+  const prompt = `
+    당신은 보험 광고 심의 및 금융소비자보호법(금소법) 전문가입니다. 
+    다음 블로그 포스팅 내용을 금소법 가이드라인에 맞게 수정하여 재작성해주세요.
+
+    [금소법 준수 가이드라인]
+    1. '최고', '보장', '확정', '무조건', '단 한 번' 등 과장되거나 오해를 불러일으킬 수 있는 단어를 순화하거나 삭제하세요.
+    2. 보험 상품의 장점뿐만 아니라 주의사항이나 위험성도 균형 있게 언급하세요.
+    3. "보험계약 체결 전 상품설명서 및 약관을 반드시 읽어보시기 바랍니다"와 같은 필수 안내 문구를 적절한 위치에 삽입하세요.
+    4. "이 포스팅은 금융소비자보호법 및 관련 법령을 준수하여 작성되었습니다"라는 문구를 마지막에 추가하세요.
+    5. 기존의 마크다운 구조(##, ###, [IMAGE_PLACEHOLDER_n])는 그대로 유지하세요.
+    6. 가독성을 위해 문장을 짧게 유지하고 줄바꿈을 자주 하세요.
+
+    [원본 데이터]
+    제목: ${post.finalTitle}
+    본문: ${post.content}
+
+    결과는 반드시 {"finalTitle": "수정된 제목", "content": "수정된 본문"} 형식의 JSON 객체여야 합니다.
+  `;
+
+  const openaiKey = getOpenAIKey();
+  if (openaiKey) {
+    try {
+      const data = await callOpenAI({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "당신은 금소법 전문가입니다. 반드시 JSON 형식으로 응답하세요." },
+          { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" }
+      });
+      const result = safeJsonParse(data.choices[0].message.content);
+      return {
+        finalTitle: result.finalTitle || post.finalTitle,
+        content: result.content || post.content,
+        hashtags: post.hashtags,
+        imagePrompts: post.imagePrompts
+      };
+    } catch (error) {
+      console.error("OpenAI Error:", error);
+      if (!getGeminiKey()) throw error;
+    }
+  }
+
+  const ai = getAI();
+  if (!ai) throw new Error("Gemini API key is missing and OpenAI failed.");
+
+  const response = await callGemini(ai, 'gemini-3-flash-preview', {
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          finalTitle: { type: Type.STRING },
+          content: { type: Type.STRING }
+        },
+        required: ["finalTitle", "content"]
+      }
+    }
+  });
+  
+  const result = safeJsonParse(response.text);
+  return {
+    finalTitle: result.finalTitle || post.finalTitle,
+    content: result.content || post.content,
+    hashtags: post.hashtags,
+    imagePrompts: post.imagePrompts
+  };
+};
+
 // --- NEW ENHANCED INSURANCE DESIGN SERVICE ---
 
 export const designInsurancePlan = async (customerInput: string) => {
