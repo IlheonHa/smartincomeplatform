@@ -13,6 +13,7 @@ interface AdminProps {
   notifications: AppNotification[];
   onAddNotification: (notif: Partial<AppNotification>) => void;
   onDeleteNotification: (id: string) => void;
+  onDeleteNotifications: (ids: string[]) => void;
   onResetDatabase: () => void;
   onRefresh: () => void;
 }
@@ -27,6 +28,7 @@ const Admin: React.FC<AdminProps> = ({
   notifications,
   onAddNotification,
   onDeleteNotification,
+  onDeleteNotifications,
   onResetDatabase,
   onRefresh
 }) => {
@@ -38,6 +40,7 @@ const Admin: React.FC<AdminProps> = ({
   const [notifMessage, setNotifMessage] = useState('');
   const [notifType, setNotifType] = useState<'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR'>('INFO');
   const [notifTarget, setNotifTarget] = useState<'ALL' | string>('ALL');
+  const [selectedNotifs, setSelectedNotifs] = useState<string[]>([]);
 
   // Sync local state when props change
   React.useEffect(() => {
@@ -67,6 +70,28 @@ const Admin: React.FC<AdminProps> = ({
     setNotifTitle('');
     setNotifMessage('');
     alert('알림이 전송되었습니다.');
+  };
+
+  const handleBatchDeleteNotifs = () => {
+    if (selectedNotifs.length === 0) return;
+    if (confirm(`선택한 ${selectedNotifs.length}개의 알림을 삭제하시겠습니까?`)) {
+      onDeleteNotifications(selectedNotifs);
+      setSelectedNotifs([]);
+    }
+  };
+
+  const toggleNotifSelection = (id: string) => {
+    setSelectedNotifs(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleAllNotifs = () => {
+    if (selectedNotifs.length === notifications.length) {
+      setSelectedNotifs([]);
+    } else {
+      setSelectedNotifs(notifications.map(n => n.id));
+    }
   };
 
   const handleUpdateMemberPerformance = (userId: string, field: keyof User, value: string) => {
@@ -232,10 +257,29 @@ const Admin: React.FC<AdminProps> = ({
 
           {/* Notification History */}
           <div className="space-y-4">
-            <h4 className="text-sm font-bold text-gray-700 flex items-center">
-              <span className="w-1 h-4 bg-amber-500 rounded-full mr-2"></span>
-              최근 전송 이력
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold text-gray-700 flex items-center">
+                <span className="w-1 h-4 bg-amber-500 rounded-full mr-2"></span>
+                최근 전송 이력
+              </h4>
+              <div className="flex items-center gap-2">
+                {selectedNotifs.length > 0 && (
+                  <button 
+                    onClick={handleBatchDeleteNotifs}
+                    className="px-3 py-1.5 bg-red-50 text-red-600 text-[10px] font-bold rounded-lg border border-red-100 hover:bg-red-100 transition-all flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    {selectedNotifs.length}개 일괄 삭제
+                  </button>
+                )}
+                <button 
+                  onClick={toggleAllNotifs}
+                  className="px-3 py-1.5 bg-gray-50 text-gray-600 text-[10px] font-bold rounded-lg border border-gray-100 hover:bg-gray-100 transition-all"
+                >
+                  {selectedNotifs.length === notifications.length && notifications.length > 0 ? '선택 해제' : '전체 선택'}
+                </button>
+              </div>
+            </div>
             <div className="border rounded-2xl overflow-hidden max-h-[350px] overflow-y-auto">
               {notifications.length === 0 ? (
                 <div className="p-12 text-center text-gray-400 text-xs">
@@ -244,9 +288,15 @@ const Admin: React.FC<AdminProps> = ({
               ) : (
                 <div className="divide-y">
                   {notifications.map((notif) => (
-                    <div key={notif.id} className="p-4 hover:bg-gray-50 group transition-colors">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 space-y-1">
+                    <div key={notif.id} className={`p-4 hover:bg-gray-50 group transition-colors ${selectedNotifs.includes(notif.id) ? 'bg-blue-50/50' : ''}`}>
+                      <div className="flex items-start gap-4">
+                        <input 
+                          type="checkbox"
+                          checked={selectedNotifs.includes(notif.id)}
+                          onChange={() => toggleNotifSelection(notif.id)}
+                          className="mt-1 w-4 h-4 rounded border-gray-300 text-[#002D62] focus:ring-[#002D62]"
+                        />
+                        <div className="flex-1 space-y-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
                               notif.type === 'ERROR' ? 'bg-red-100 text-red-700' :
@@ -255,7 +305,7 @@ const Admin: React.FC<AdminProps> = ({
                             }`}>
                               {notif.type}
                             </span>
-                            <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1">
+                            <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1 truncate">
                               {notif.targetUserId ? (
                                 <><UserIcon className="w-3 h-3" /> {notif.targetUserName || '개별 회원'}</>
                               ) : (
@@ -268,7 +318,7 @@ const Admin: React.FC<AdminProps> = ({
                         </div>
                         <button 
                           onClick={() => onDeleteNotification(notif.id)}
-                          className="p-2 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                          className="p-2 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

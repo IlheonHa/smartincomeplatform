@@ -732,6 +732,13 @@ const App: React.FC = () => {
     }
   };
 
+  const deleteNotifications = async (ids: string[]) => {
+    const { error } = await supabase.from('notifications').delete().in('id', ids);
+    if (!error) {
+      setNotifications(prev => prev.filter(n => !ids.includes(n.id)));
+    }
+  };
+
   // Update Dashboard Data in Supabase
   const updateDashboardData = async (data: DashboardData) => {
     const { error } = await supabase.from('dashboard_data').upsert(toSnakeCase({ id: 1, ...data }));
@@ -1012,6 +1019,7 @@ const App: React.FC = () => {
           notifications={notifications}
           onAddNotification={addNotification}
           onDeleteNotification={deleteNotification}
+          onDeleteNotifications={deleteNotifications}
           onResetDatabase={resetDatabase}
           onRefresh={fetchAllData}
         />

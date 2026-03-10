@@ -46,12 +46,17 @@ const Dashboard: React.FC<DashboardProps> = ({ data, users, currentUser, leads, 
     !n.targetUserId || n.targetUserId === currentUser.id
   ).slice(0, 5);
   
-  // Calculate stats based on real data from users table (as requested: "linked only to users table")
+  // Calculate stats based on real data from CRM leads
   const stats = useMemo(() => {
-    const relevantUsers = isAdmin ? users.filter(u => u.role === UserRole.PARTNER) : [currentUser];
+    const relevantLeads = isAdmin ? leads : leads.filter(l => l.userId === currentUser.id);
     
-    const totalLeadsCount = relevantUsers.reduce((acc, curr) => acc + (curr.leadsCount || 0), 0);
-    const activeConsultationsCount = relevantUsers.reduce((acc, curr) => acc + (curr.activeConsultationsCount || 0), 0);
+    const totalLeadsCount = relevantLeads.length;
+    const activeConsultationsCount = relevantLeads.filter(l => 
+      l.status === LeadStatus.NEW || 
+      l.status === LeadStatus.CONTACTED || 
+      l.status === LeadStatus.ANALYSIS || 
+      l.status === LeadStatus.PROPOSAL
+    ).length;
 
     return [
       { 
@@ -71,7 +76,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, users, currentUser, leads, 
         description: '현재 진행 중인 전문 상담 건수'
       },
     ];
-  }, [users, isAdmin, currentUser, data.stats]);
+  }, [leads, isAdmin, currentUser, data.stats]);
 
   const activePartners = users.filter(u => u.role === UserRole.PARTNER && u.isActive).length;
   const totalSubscriptionRevenue = users.reduce((acc, curr) => acc + (curr.monthlyFee || 0), 0);
@@ -260,7 +265,67 @@ const Dashboard: React.FC<DashboardProps> = ({ data, users, currentUser, leads, 
         </div>
       </div>
 
-      {/* Calendar Events Section - Moved below Welcome Banner */}
+      <div className="grid grid-cols-1 gap-8">
+        {/* Notifications Section */}
+        <div className="neo-card overflow-hidden h-fit">
+          <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <div className="flex items-center gap-3">
+              <Bell className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-bold text-primary tracking-tight">스마트인컴 알림</h3>
+            </div>
+            <button className="text-[10px] font-bold text-primary hover:underline uppercase tracking-widest">전체 알림 보기</button>
+          </div>
+          <div className="divide-y divide-slate-100 max-h-[400px] overflow-y-auto custom-scrollbar">
+            {myNotifications.length === 0 ? (
+              <div className="p-12 text-center text-slate-400 text-xs font-medium">
+                새로운 알림이 없습니다.
+              </div>
+            ) : (
+              myNotifications.map((notif) => (
+                <div key={notif.id} className="border-b border-slate-50 last:border-none">
+                  <button 
+                    onClick={() => setExpandedNotif(expandedNotif === notif.id ? null : notif.id)}
+                    className="w-full px-8 py-5 flex items-center justify-between hover:bg-slate-50 transition-all duration-300 group text-left"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className={`p-2.5 rounded-xl bg-slate-100 transition-transform group-hover:scale-110 ${
+                        notif.type === 'ERROR' ? 'text-red-500' :
+                        notif.type === 'WARNING' ? 'text-amber-500' :
+                        notif.type === 'SUCCESS' ? 'text-accent' : 'text-primary'
+                      }`}>
+                        {notif.type === 'ERROR' ? <AlertCircle className="w-5 h-5" /> : 
+                         notif.type === 'WARNING' ? <AlertCircle className="w-5 h-5" /> : 
+                         notif.type === 'SUCCESS' ? <CheckCircle2 className="w-5 h-5" /> : <Activity className="w-5 h-5" />}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-primary truncate">{notif.title}</p>
+                        <p className="text-[10px] font-bold text-slate-400 mt-0.5">
+                          {notif.targetUserId ? '개별 알림' : '전체 공지'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 flex-shrink-0">
+                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                        {new Date(notif.createdAt).toLocaleDateString()}
+                      </span>
+                      <ChevronRight className={`w-4 h-4 text-slate-200 group-hover:text-primary transition-all ${expandedNotif === notif.id ? 'rotate-90 text-primary' : ''}`} />
+                    </div>
+                  </button>
+                  {expandedNotif === notif.id && (
+                    <div className="px-8 pb-6 pt-0 animate-fade-in">
+                      <div className="ml-14 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{notif.message}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Calendar Events Section */}
       <div className="neo-card overflow-hidden h-fit">
         <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <div className="flex items-center gap-3">
@@ -457,63 +522,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, users, currentUser, leads, 
       </div>
 
       <div className="grid grid-cols-1 gap-8">
-        {/* Notifications Section */}
-        <div className="neo-card overflow-hidden h-fit">
-          <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-            <div className="flex items-center gap-3">
-              <Bell className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-bold text-primary tracking-tight">스마트인컴 알림</h3>
-            </div>
-            <button className="text-[10px] font-bold text-primary hover:underline uppercase tracking-widest">전체 알림 보기</button>
-          </div>
-          <div className="divide-y divide-slate-100 max-h-[400px] overflow-y-auto custom-scrollbar">
-            {myNotifications.length === 0 ? (
-              <div className="p-12 text-center text-slate-400 text-xs font-medium">
-                새로운 알림이 없습니다.
-              </div>
-            ) : (
-              myNotifications.map((notif) => (
-                <div key={notif.id} className="border-b border-slate-50 last:border-none">
-                  <button 
-                    onClick={() => setExpandedNotif(expandedNotif === notif.id ? null : notif.id)}
-                    className="w-full px-8 py-5 flex items-center justify-between hover:bg-slate-50 transition-all duration-300 group text-left"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className={`p-2.5 rounded-xl bg-slate-100 transition-transform group-hover:scale-110 ${
-                        notif.type === 'ERROR' ? 'text-red-500' :
-                        notif.type === 'WARNING' ? 'text-amber-500' :
-                        notif.type === 'SUCCESS' ? 'text-accent' : 'text-primary'
-                      }`}>
-                        {notif.type === 'ERROR' ? <AlertCircle className="w-5 h-5" /> : 
-                         notif.type === 'WARNING' ? <AlertCircle className="w-5 h-5" /> : 
-                         notif.type === 'SUCCESS' ? <CheckCircle2 className="w-5 h-5" /> : <Activity className="w-5 h-5" />}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold text-primary truncate">{notif.title}</p>
-                        <p className="text-[10px] font-bold text-slate-400 mt-0.5">
-                          {notif.targetUserId ? '개별 알림' : '전체 공지'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4 flex-shrink-0">
-                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
-                        {new Date(notif.createdAt).toLocaleDateString()}
-                      </span>
-                      <ChevronRight className={`w-4 h-4 text-slate-200 group-hover:text-primary transition-all ${expandedNotif === notif.id ? 'rotate-90 text-primary' : ''}`} />
-                    </div>
-                  </button>
-                  {expandedNotif === notif.id && (
-                    <div className="px-8 pb-6 pt-0 animate-fade-in">
-                      <div className="ml-14 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                        <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{notif.message}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Secret Room - Exclusive Insight Area */}
