@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toPng } from 'html-to-image';
 import { 
   Magnet, 
   Layout, 
@@ -39,7 +40,8 @@ import {
   BarChart3,
   UserCheck,
   Link,
-  ClipboardList
+  ClipboardList,
+  Image as ImageIcon
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { User, UserRole, Lead, LeadStatus } from '../types';
@@ -56,16 +58,63 @@ const LandingPageGenerator: React.FC<{
   initialData: any;
   savedPages: any[];
 }> = ({ onSave, initialData, savedPages }) => {
+  const previewRef = useRef<HTMLDivElement>(null);
   const [industry, setIndustry] = useState(initialData?.industry || '보험');
   const [requirements, setRequirements] = useState(initialData?.requirements || '');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any>(initialData || null);
+  const [isSavingImage, setIsSavingImage] = useState(false);
+  const [isSavingData, setIsSavingData] = useState(false);
+
+  const handleSaveImage = async () => {
+    if (!previewRef.current) return;
+    setIsSavingImage(true);
+    try {
+      const dataUrl = await toPng(previewRef.current, {
+        cacheBust: true,
+        backgroundColor: '#ffffff',
+        style: {
+          transform: 'scale(1)',
+          transformOrigin: 'top left'
+        }
+      });
+      const link = document.createElement('a');
+      link.download = `landing-page-${industry}-${new Date().getTime()}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('이미지 저장 실패:', err);
+      alert('이미지 저장 중 오류가 발생했습니다.');
+    } finally {
+      setIsSavingImage(false);
+    }
+  };
+
+  const handleSaveData = async () => {
+    if (!generatedContent) return;
+    setIsSavingData(true);
+    try {
+      await onSave({ 
+        ...generatedContent, 
+        industry, 
+        requirements, 
+        createdAt: new Date().toLocaleString() 
+      });
+      alert('랜딩페이지가 저장되었습니다.');
+    } catch (err) {
+      console.error('데이터 저장 실패:', err);
+      alert('저장 중 오류가 발생했습니다.');
+    } finally {
+      setIsSavingData(false);
+    }
+  };
 
   // Check if current content is already saved
-  const isAlreadySaved = generatedContent && savedPages.some(p => 
-    p.headline === generatedContent.headline && 
-    p.industry === industry
-  );
+  const isAlreadySaved = generatedContent && savedPages.some(p => {
+    const content = p.content || p;
+    return content.headline === generatedContent.headline && 
+           content.industry === industry;
+  });
 
   // Update state if initialData changes (when loading from history)
   React.useEffect(() => {
@@ -146,18 +195,26 @@ const LandingPageGenerator: React.FC<{
 
           {generatedContent && (
             <div className="space-y-6 pt-6 border-t border-slate-100">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">생성된 콘텐츠</label>
-                <button 
-                  onClick={() => {
-                    onSave({ ...generatedContent, industry, requirements, createdAt: new Date().toLocaleString() });
-                  }}
-                  disabled={isAlreadySaved}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold transition-all ${isAlreadySaved ? 'bg-emerald-50 text-emerald-500' : 'bg-primary text-white hover:bg-primary-light'}`}
-                >
-                  {isAlreadySaved ? <CheckCircle2 className="w-3 h-3" /> : <Save className="w-3 h-3" />}
-                  {isAlreadySaved ? '저장됨' : '현재 페이지 저장'}
-                </button>
+              <div className="flex flex-col gap-3">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">콘텐츠 관리</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={handleSaveData}
+                    disabled={isAlreadySaved || isSavingData}
+                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[10px] font-bold transition-all ${isAlreadySaved ? 'bg-emerald-50 text-emerald-500' : 'bg-primary text-white hover:bg-primary-light'} disabled:opacity-50`}
+                  >
+                    {isSavingData ? <Clock className="w-3 h-3 animate-spin" /> : (isAlreadySaved ? <CheckCircle2 className="w-3 h-3" /> : <Save className="w-3 h-3" />)}
+                    {isAlreadySaved ? '저장됨' : (isSavingData ? '저장 중...' : '현재 페이지 저장')}
+                  </button>
+                  <button 
+                    onClick={handleSaveImage}
+                    disabled={isSavingImage}
+                    className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[10px] font-bold bg-slate-900 text-white hover:bg-black transition-all disabled:opacity-50"
+                  >
+                    {isSavingImage ? <Clock className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}
+                    {isSavingImage ? '이미지 생성 중...' : '이미지로 저장'}
+                  </button>
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-slate-400 uppercase">헤드라인</label>
@@ -194,7 +251,7 @@ const LandingPageGenerator: React.FC<{
           </div>
           <div className="flex-1 bg-white p-12 overflow-y-auto">
             {generatedContent ? (
-              <div className="max-w-xl mx-auto space-y-12 text-center">
+              <div ref={previewRef} className="max-w-xl mx-auto space-y-12 text-center p-8 bg-white">
                 <div className="space-y-6">
                   <h1 className="text-4xl font-black text-slate-900 leading-tight">{generatedContent.headline}</h1>
                   <p className="text-lg text-slate-500 font-medium">{generatedContent.subheadline}</p>
@@ -236,27 +293,34 @@ const LandingPageGenerator: React.FC<{
             <h3 className="text-lg font-bold text-slate-900 tracking-tight">최근 저장된 랜딩페이지</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {savedPages.slice(0, 4).map((page) => (
-              <div 
-                key={page.id}
-                onClick={() => {
-                  setIndustry(page.industry);
-                  setRequirements(page.requirements || '');
-                  setGeneratedContent(page);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="p-4 bg-white rounded-2xl border border-slate-100 hover:border-primary/30 hover:shadow-md transition-all cursor-pointer group"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-slate-50 text-slate-400 uppercase tracking-widest">
-                    {page.industry}
-                  </span>
-                  <ExternalLink className="w-3 h-3 text-slate-200 group-hover:text-primary transition-colors" />
+            {savedPages.slice(0, 4).map((page) => {
+              const content = page.content || page;
+              const displayIndustry = content.industry || '기타';
+              const displayHeadline = page.title || content.headline;
+              const displayDate = page.createdAt ? page.createdAt.split('T')[0] : (content.createdAt ? content.createdAt.split(',')[0] : '-');
+
+              return (
+                <div 
+                  key={page.id}
+                  onClick={() => {
+                    setIndustry(displayIndustry);
+                    setRequirements(content.requirements || '');
+                    setGeneratedContent(content);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="p-4 bg-white rounded-2xl border border-slate-100 hover:border-primary/30 hover:shadow-md transition-all cursor-pointer group"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-slate-50 text-slate-400 uppercase tracking-widest">
+                      {displayIndustry}
+                    </span>
+                    <ExternalLink className="w-3 h-3 text-slate-200 group-hover:text-primary transition-colors" />
+                  </div>
+                  <h4 className="text-xs font-bold text-slate-800 line-clamp-1">{displayHeadline}</h4>
+                  <p className="text-[10px] text-slate-400 mt-1">{displayDate}</p>
                 </div>
-                <h4 className="text-xs font-bold text-slate-800 line-clamp-1">{page.headline}</h4>
-                <p className="text-[10px] text-slate-400 mt-1">{page.createdAt.split(',')[0]}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -829,10 +893,29 @@ const LeadCollection: React.FC<{
 
   const handleSaveLandingPage = async (page: any) => {
     // Prevent duplicate saves of the exact same content
-    const exists = savedLandingPages.some(p => p.headline === page.headline && p.industry === page.industry);
-    if (exists) return;
+    const exists = savedLandingPages.some(p => {
+      const content = p.content || p;
+      return content.headline === page.headline && content.industry === page.industry;
+    });
     
-    await onSaveLandingPage({ id: Date.now().toString(), ...page });
+    if (exists) {
+      alert('이미 저장된 랜딩페이지입니다.');
+      return;
+    }
+    
+    try {
+      // Map to DB schema
+      const dbPage = {
+        id: Date.now().toString(),
+        title: page.headline,
+        content: page,
+        createdAt: new Date().toISOString()
+      };
+      await onSaveLandingPage(dbPage);
+    } catch (err) {
+      console.error('Failed to save landing page:', err);
+      throw err; // Propagate to LandingPageGenerator
+    }
   };
 
   const handleDeleteSavedPage = async (id: string) => {
@@ -954,12 +1037,12 @@ const LeadCollection: React.FC<{
             지금 바로 고전환 도구들을 활용해 보세요.
           </p>
           <div className="flex flex-wrap gap-4">
-            <button className="px-8 py-4 bg-accent text-primary font-bold rounded-2xl hover:bg-white transition-all shadow-xl shadow-accent/20 flex items-center gap-3 group">
+            <button 
+              onClick={() => setActiveTool('form')}
+              className="px-8 py-4 bg-accent text-primary font-bold rounded-2xl hover:bg-white transition-all shadow-xl shadow-accent/20 flex items-center gap-3 group"
+            >
               <span>수집 시스템 시작하기</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <button className="px-8 py-4 bg-white/10 backdrop-blur-md text-white font-bold rounded-2xl hover:bg-white/20 transition-all border border-white/10">
-              사용 가이드 보기
             </button>
           </div>
         </div>
@@ -1129,38 +1212,46 @@ const LeadCollection: React.FC<{
             </span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {savedLandingPages.map((page) => (
-              <motion.div 
-                key={page.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="neo-card p-6 border-none group relative overflow-hidden"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className={`px-3 py-1 rounded-full bg-primary/5 text-primary text-[9px] font-bold uppercase tracking-widest`}>
-                    {page.industry}
+            {savedLandingPages.map((page) => {
+              const content = page.content || page;
+              const displayIndustry = content.industry || '기타';
+              const displayHeadline = page.title || content.headline;
+              const displaySubheadline = content.subheadline || '';
+              const displayDate = page.createdAt ? page.createdAt.split('T')[0] : (content.createdAt ? content.createdAt.split(',')[0] : '-');
+
+              return (
+                <motion.div 
+                  key={page.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="neo-card p-6 border-none group relative overflow-hidden"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className={`px-3 py-1 rounded-full bg-primary/5 text-primary text-[9px] font-bold uppercase tracking-widest`}>
+                      {displayIndustry}
+                    </div>
+                    <button 
+                      onClick={() => handleDeleteSavedPage(page.id)}
+                      className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                  <button 
-                    onClick={() => handleDeleteSavedPage(page.id)}
-                    className="p-2 text-slate-300 hover:text-red-500 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-                <h4 className="font-bold text-slate-900 mb-2 line-clamp-1">{page.headline}</h4>
-                <p className="text-xs text-slate-500 line-clamp-2 mb-6 font-medium">{page.subheadline}</p>
-                <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                  <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{page.createdAt}</span>
-                  <button 
-                    onClick={() => handleLoadPage(page)}
-                    className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-widest hover:underline"
-                  >
-                    <span>상세보기</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </button>
-                </div>
-              </motion.div>
-            ))}
+                  <h4 className="font-bold text-slate-900 mb-2 line-clamp-1">{displayHeadline}</h4>
+                  <p className="text-xs text-slate-500 line-clamp-2 mb-6 font-medium">{displaySubheadline}</p>
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                    <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{displayDate}</span>
+                    <button 
+                      onClick={() => handleLoadPage(content)}
+                      className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-widest hover:underline"
+                    >
+                      <span>상세보기</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </button>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       )}

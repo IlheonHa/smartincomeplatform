@@ -893,10 +893,16 @@ const App: React.FC = () => {
 
   // Landing Page Handlers
   const addLandingPage = async (page: any) => {
-    const { error } = await supabase.from('landing_pages').insert(toSnakeCase(page));
-    if (!error) {
-      setSavedLandingPages(prev => [...prev, page]);
+    const pageWithUser = {
+      ...page,
+      userId: currentUser?.id
+    };
+    const { error } = await supabase.from('landing_pages').insert(toSnakeCase(pageWithUser));
+    if (error) {
+      console.error('Landing page save error:', error);
+      throw error;
     }
+    setSavedLandingPages(prev => [...prev, pageWithUser]);
   };
 
   const deleteLandingPage = async (id: string) => {

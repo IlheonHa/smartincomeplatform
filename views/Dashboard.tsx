@@ -410,7 +410,10 @@ const Dashboard: React.FC<DashboardProps> = ({ data, users, currentUser, leads, 
             </div>
             <div className="mt-8 pt-8 border-t border-slate-50 flex items-center justify-between">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Real-time Data Sync</span>
-              <button className="flex items-center gap-2 text-xs font-black text-primary hover:gap-3 transition-all">
+              <button 
+                onClick={() => (window as any).setActiveTab?.('crm')}
+                className="flex items-center gap-2 text-xs font-black text-primary hover:gap-3 transition-all"
+              >
                 상세보기 <ArrowRight className="w-4 h-4" />
               </button>
             </div>

@@ -336,8 +336,8 @@ const Introduction: React.FC<IntroductionProps> = ({ onNavigate }) => {
             {[
               { year: "2024 Q1", title: "AI 엔진 고도화", desc: "생성형 AI 모델의 한국어 최적화 및 수익형 데이터 학습 완료" },
               { year: "2024 Q3", title: "Golden System 출시", desc: "무인 상담 및 자동화 퍼널 시스템의 파트너십 베타 오픈" },
-              { year: "2025 Q1", title: "글로벌 확장", desc: "다국어 지원 및 해외 시장 가망고객 수집 인프라 구축" },
-              { year: "2026 Vision", title: "완전 자동화 생태계", desc: "개인별 맞춤형 AI 비서가 비즈니스 전체를 관리하는 미래" }
+              { year: "2025 Q1", title: "시스템 자동화", desc: "가망고객 수집 자동화 인프라 구축" },
+              { year: "2026 Vision", title: "사업대상 확대", desc: "보험영업회 다양한 수익파이프라인인프라 구축" }
             ].map((step, idx) => (
               <div key={idx} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6 relative group">
                 <div className="absolute -top-4 left-8 px-4 py-2 bg-primary text-white text-[10px] font-black rounded-full group-hover:bg-accent group-hover:text-primary transition-colors">

@@ -1,7 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as XLSX from 'xlsx';
+import { toPng } from 'html-to-image';
 import { 
   Calendar as CalendarIcon, 
   Contact2, 
@@ -173,6 +174,7 @@ const CalendarTool: React.FC<{
 
   const handleEditEvent = (event: CalendarEvent) => {
     setEditingEvent(event);
+    setSelectedDate(event.date);
     setFormData({
       title: event.title,
       time: event.time,
@@ -187,7 +189,7 @@ const CalendarTool: React.FC<{
     if (!formData.title.trim()) return;
 
     if (editingEvent) {
-      await onUpdateEvent({ ...editingEvent, ...formData });
+      await onUpdateEvent({ ...editingEvent, ...formData, date: selectedDate });
     } else {
       await onAddEvent({
         date: selectedDate,
@@ -524,6 +526,7 @@ const CalendarTool: React.FC<{
 };
 
 const BusinessCardTool: React.FC = () => {
+  const cardRef = useRef<HTMLDivElement>(null);
   const [name, setName] = useState('홍길동');
   const [title, setTitle] = useState('수석 보험 컨설턴트');
   const [phone, setPhone] = useState('010-1234-5678');
@@ -538,6 +541,32 @@ const BusinessCardTool: React.FC = () => {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [aiSlogans, setAiSlogans] = useState<string[]>([]);
   const [isGeneratingSlogan, setIsGeneratingSlogan] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSaveImage = async () => {
+    if (!cardRef.current) return;
+    
+    setIsSaving(true);
+    try {
+      const dataUrl = await toPng(cardRef.current, {
+        cacheBust: true,
+        backgroundColor: '#ffffff',
+        style: {
+          transform: 'scale(1)',
+          transformOrigin: 'top left'
+        }
+      });
+      const link = document.createElement('a');
+      link.download = `business-card-${name}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('명함 이미지 저장 실패:', err);
+      alert('이미지 저장 중 오류가 발생했습니다.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleGenerateSlogan = async () => {
     const gemini = getGeminiKey();
@@ -668,13 +697,18 @@ const BusinessCardTool: React.FC = () => {
             </div>
           </div>
 
-          <button className="w-full py-5 bg-emerald-500 text-white font-black text-lg rounded-2xl shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3 hover:bg-emerald-600 transition-all active:scale-95">
-            <Download className="w-6 h-6" /> 명함 이미지 저장하기
+          <button 
+            onClick={handleSaveImage}
+            disabled={isSaving}
+            className="w-full py-5 bg-emerald-500 text-white font-black text-lg rounded-2xl shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3 hover:bg-emerald-600 transition-all active:scale-95 disabled:opacity-50"
+          >
+            {isSaving ? <Clock className="w-6 h-6 animate-spin" /> : <Download className="w-6 h-6" />}
+            {isSaving ? '이미지 생성 중...' : '명함 이미지 저장하기'}
           </button>
         </div>
 
         <div className="flex-1 flex items-center justify-center bg-slate-50 rounded-[3rem] p-8 lg:p-12 border border-slate-100 min-h-[600px]">
-          <div className="w-full max-w-md bg-white rounded-[2rem] shadow-[0_40px_80px_-12px_rgba(0,0,0,0.18)] flex flex-col relative overflow-hidden group border border-slate-100">
+          <div ref={cardRef} className="w-full max-w-md bg-white rounded-[2rem] shadow-[0_40px_80px_-12px_rgba(0,0,0,0.18)] flex flex-col relative overflow-hidden group border border-slate-100">
             {/* Design Accents - More sophisticated gradients */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-full -mr-32 -mt-32 transition-all duration-1000 group-hover:scale-110"></div>
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-slate-900/5 to-transparent rounded-full -ml-24 -mb-24 transition-all duration-1000 group-hover:scale-110"></div>
