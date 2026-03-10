@@ -1,6 +1,6 @@
 {
   "name": "Smart Income",
-  "description": "Multi-Vertical Income Automation Platform. Enterprise-grade SaaS Platform architecture designed by a CTO. Integrates AI Hub, Automated Marketing, and a CRM to transform sales into a scalable system business.",
+  "description": "상위 1% 전문가를 위한 황금키워드 기반 고수익 블로그 자동화 플랫폼. AI 기반 키워드 발굴, 제목 최적화, 그리고 완벽한 포스팅 생성을 지원합니다.",
   "requestFramePermissions": [
     "camera",
     "microphone"

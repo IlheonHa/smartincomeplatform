@@ -1031,3 +1031,340 @@ export const generateInsuranceAgeTip = async (age: number, birthDate: string) =>
   });
   return safeJsonParse(response.text);
 };
+
+// --- GOLDEN KEYWORD WRITING SPECIFIC SERVICES ---
+
+export const getGoldenCategoryRecommendations = async (category: string) => {
+  checkAIAvailability();
+  const prompt = `사용자가 입력한 카테고리: "${category}". 
+  검색 최적화(SEO) 관점에서 블로그 수익화에 유리한 세부 카테고리 5개를 추천해주세요. 
+  결과는 반드시 ["카테고리1", "카테고리2", ...] 형식의 JSON 배열이어야 합니다.`;
+
+  const openaiKey = getOpenAIKey();
+  if (openaiKey) {
+    try {
+      const data = await callOpenAI({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "당신은 블로그 마케팅 전문가입니다. 반드시 JSON 배열 형식으로 응답하세요." },
+          { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" }
+      });
+      const result = safeJsonParse(data.choices[0].message.content);
+      return Array.isArray(result) ? result : (result.categories || []);
+    } catch (error) {
+      console.error("OpenAI Error:", error);
+      if (!getGeminiKey()) throw error;
+    }
+  }
+
+  const ai = getAI();
+  if (!ai) throw new Error("Gemini API key is missing.");
+
+  const response = await callGemini(ai, 'gemini-3-flash-preview', {
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: { type: Type.ARRAY, items: { type: Type.STRING } }
+    }
+  });
+  return safeJsonParse(response.text);
+};
+
+export const getGoldenTopicRecommendations = async (category: string, topic: string) => {
+  checkAIAvailability();
+  const prompt = `카테고리: "${category}", 사용자 입력 주제: "${topic}". 
+  해당 카테고리 내에서 검색 유입이 높고 체류 시간이 길어질 수 있는 구체적인 블로그 주제 5개를 추천해주세요. 
+  사용자가 "랜덤" 또는 "random"을 입력했다면, 현재 시점(2026년 3월) 기준 향후 1개월 내 유망한 트렌드 주제를 추천하세요.
+  결과는 반드시 ["주제1", "주제2", ...] 형식의 JSON 배열이어야 합니다.`;
+
+  const openaiKey = getOpenAIKey();
+  if (openaiKey) {
+    try {
+      const data = await callOpenAI({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "당신은 블로그 콘텐츠 전략가입니다. 반드시 JSON 배열 형식으로 응답하세요." },
+          { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" }
+      });
+      const result = safeJsonParse(data.choices[0].message.content);
+      return Array.isArray(result) ? result : (result.topics || []);
+    } catch (error) {
+      console.error("OpenAI Error:", error);
+      if (!getGeminiKey()) throw error;
+    }
+  }
+
+  const ai = getAI();
+  if (!ai) throw new Error("Gemini API key is missing.");
+
+  const response = await callGemini(ai, 'gemini-3-flash-preview', {
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: { type: Type.ARRAY, items: { type: Type.STRING } }
+    }
+  });
+  return safeJsonParse(response.text);
+};
+
+export const getGoldenPersonaRecommendations = async (category: string, topic: string) => {
+  checkAIAvailability();
+  const prompt = `카테고리: "${category}", 주제: "${topic}". 
+  이 글을 읽을 가장 적합한 타겟 독자(페르소나) 5명을 추천해주세요. 
+  예: "30대 재테크에 관심 있는 직장인", "아이 교육에 고민이 많은 초보 부모" 등.
+  결과는 반드시 ["페르소나1", "페르소나2", ...] 형식의 JSON 배열이어야 합니다.`;
+
+  const openaiKey = getOpenAIKey();
+  if (openaiKey) {
+    try {
+      const data = await callOpenAI({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "당신은 타겟 마케팅 전문가입니다. 반드시 JSON 배열 형식으로 응답하세요." },
+          { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" }
+      });
+      const result = safeJsonParse(data.choices[0].message.content);
+      return Array.isArray(result) ? result : (result.personas || []);
+    } catch (error) {
+      console.error("OpenAI Error:", error);
+      if (!getGeminiKey()) throw error;
+    }
+  }
+
+  const ai = getAI();
+  if (!ai) throw new Error("Gemini API key is missing.");
+
+  const response = await callGemini(ai, 'gemini-3-flash-preview', {
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: { type: Type.ARRAY, items: { type: Type.STRING } }
+    }
+  });
+  return safeJsonParse(response.text);
+};
+
+export const getGoldenKeywordRecommendations = async (category: string, topic: string, persona: string) => {
+  checkAIAvailability();
+  const prompt = `카테고리: "${category}", 주제: "${topic}", 타겟: "${persona}". 
+  위 정보를 종합 분석하여 검색 노출에 유리한 황금 키워드를 추천해주세요. 
+  주요 키워드, 보조 키워드, 롱테일 키워드를 포함해야 합니다.
+  
+  [분석 기준]
+  - 주제 핵심성, 검색 의도 적합성, 경쟁 강도, 예상 검색량, 수익성, 한국 사용자 친화성 등
+  
+  [제외 규칙]
+  - 일반적인 단일 단어, 특정 브랜드명, 비속어, 경쟁 과도 키워드 제외
+  
+  결과는 반드시 다음 구조의 JSON 객체여야 합니다:
+  {
+    "keywords": [
+      {
+        "keyword": "키워드",
+        "category": "카테고리",
+        "type": "주요/보조/롱테일",
+        "intent": "정보/구매/비교 등",
+        "competition": "하/중/상",
+        "searchVolume": "수치",
+        "seasonality": "사계절/봄/여름 등",
+        "profitability": "하/중/상",
+        "ageSuitability": "2030/4050 등",
+        "googlePopularity": "0-100",
+        "naverPopularity": "0-100",
+        "daumPopularity": "0-100"
+      }
+    ],
+    "longtailKeywords": ["롱테일1", "롱테일2", ...]
+  }`;
+
+  const openaiKey = getOpenAIKey();
+  if (openaiKey) {
+    try {
+      const data = await callOpenAI({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "당신은 검색 엔진 최적화(SEO) 전문가입니다. 반드시 JSON 형식으로 응답하세요." },
+          { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" }
+      });
+      const result = safeJsonParse(data.choices[0].message.content);
+      return {
+        keywords: Array.isArray(result.keywords) ? result.keywords : [],
+        longtailKeywords: Array.isArray(result.longtailKeywords) ? result.longtailKeywords : []
+      };
+    } catch (error) {
+      console.error("OpenAI Error:", error);
+      if (!getGeminiKey()) throw error;
+    }
+  }
+
+  const ai = getAI();
+  if (!ai) throw new Error("Gemini API key is missing.");
+
+  const response = await callGemini(ai, 'gemini-3-flash-preview', {
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          keywords: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                keyword: { type: Type.STRING },
+                category: { type: Type.STRING },
+                type: { type: Type.STRING },
+                intent: { type: Type.STRING },
+                competition: { type: Type.STRING },
+                searchVolume: { type: Type.STRING },
+                seasonality: { type: Type.STRING },
+                profitability: { type: Type.STRING },
+                ageSuitability: { type: Type.STRING },
+                googlePopularity: { type: Type.STRING },
+                naverPopularity: { type: Type.STRING },
+                daumPopularity: { type: Type.STRING }
+              }
+            }
+          },
+          longtailKeywords: { type: Type.ARRAY, items: { type: Type.STRING } }
+        }
+      }
+    }
+  });
+  return safeJsonParse(response.text);
+};
+
+export const getGoldenTitleRecommendations = async (keywords: string[]) => {
+  checkAIAvailability();
+  const prompt = `선택된 키워드: [${keywords.join(", ")}]. 
+  검색 최적화(SEO)가 적용된 매력적인 블로그 제목 5개를 추천해주세요. 
+  결과는 반드시 ["제목1", "제목2", ...] 형식의 JSON 배열이어야 합니다.`;
+
+  const openaiKey = getOpenAIKey();
+  if (openaiKey) {
+    try {
+      const data = await callOpenAI({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "당신은 카피라이팅 전문가입니다. 반드시 JSON 배열 형식으로 응답하세요." },
+          { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" }
+      });
+      const result = safeJsonParse(data.choices[0].message.content);
+      return Array.isArray(result) ? result : (result.titles || []);
+    } catch (error) {
+      console.error("OpenAI Error:", error);
+      if (!getGeminiKey()) throw error;
+    }
+  }
+
+  const ai = getAI();
+  if (!ai) throw new Error("Gemini API key is missing.");
+
+  const response = await callGemini(ai, 'gemini-3-flash-preview', {
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: { type: Type.ARRAY, items: { type: Type.STRING } }
+    }
+  });
+  return safeJsonParse(response.text);
+};
+
+export const generateGoldenBlogPost = async (data: {
+  category: string;
+  topic: string;
+  persona: string;
+  keywords: string[];
+  title: string;
+  toneStyle: string;
+}) => {
+  checkAIAvailability();
+  const prompt = `
+  [블로그 글 생성 요청]
+  카테고리: ${data.category}
+  주제: ${data.topic}
+  타겟: ${data.persona}
+  키워드: ${data.keywords.join(", ")}
+  제목: ${data.title}
+  말투 스타일: ${data.toneStyle}
+  
+  [필수 규칙]
+  1. 자연스럽고 사람처럼 읽히는 문체 (AI 느낌 제거)
+  2. 분량: 1500~2000자
+  3. 구조: 제목, 서론(300-400자), 본론(800-1200자), 결론(300-400자), 콜투액션, 해시태그(7-10개)
+  4. 가독성: 짧고 명료한 문장, 소제목 적극 사용, 핵심 정보 상단 배치
+  5. 키워드 배치: 핵심 키워드 2-3개, 보조 키워드 5-7개를 제목, 서론, 소제목, 결론에 자연스럽게 배치 (스터핑 금지)
+  6. 언어: 자연스러운 한국어 (번역투 금지, 맞춤법 준수)
+  7. 신뢰성: 사실 기반 정보, 불확실한 정보 단정 금지, 구체적 상업시설명 언급 금지
+  8. 이미지 배치: [IMAGE_PLACEHOLDER_1] (서론), [IMAGE_PLACEHOLDER_2] (본론), [IMAGE_PLACEHOLDER_3] (결론)
+  9. 이미지 프롬프트: 각 이미지 위치에 맞는 고품질 실사 이미지 묘사 (영문으로 작성, 한국인이 등장할 경우 "Korean person" 명시)
+  
+  결과는 반드시 다음 구조의 JSON 객체여야 합니다:
+  {
+    "title": "최종 제목",
+    "content": "마크다운 형식의 본문 (이미지 플레이스홀더 포함)",
+    "hashtags": ["태그1", "태그2", ...],
+    "imagePrompts": ["프롬프트1", "프롬프트2", "프롬프트3"]
+  }`;
+
+  const openaiKey = getOpenAIKey();
+  if (openaiKey) {
+    try {
+      const data = await callOpenAI({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: "당신은 상위 1% 블로그 마케팅 전문가이자 SEO 전문가입니다. 반드시 JSON 형식으로 응답하세요." },
+          { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" }
+      }, 90000);
+      const result = safeJsonParse(data.choices[0].message.content);
+      return {
+        title: result.title || data.title,
+        content: result.content || "본문 생성에 실패했습니다.",
+        hashtags: Array.isArray(result.hashtags) ? result.hashtags : [],
+        imagePrompts: Array.isArray(result.imagePrompts) ? result.imagePrompts : ["blogging", "writing", "creativity"]
+      };
+    } catch (error) {
+      console.error("OpenAI Error:", error);
+      if (!getGeminiKey()) throw error;
+    }
+  }
+
+  const ai = getAI();
+  if (!ai) throw new Error("Gemini API key is missing.");
+
+  const response = await callGemini(ai, 'gemini-3.1-pro-preview', {
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          title: { type: Type.STRING },
+          content: { type: Type.STRING },
+          hashtags: { type: Type.ARRAY, items: { type: Type.STRING } },
+          imagePrompts: { type: Type.ARRAY, items: { type: Type.STRING } }
+        }
+      }
+    }
+  });
+  const result = safeJsonParse(response.text);
+  return {
+    title: result.title || data.title,
+    content: result.content || "본문 생성에 실패했습니다.",
+    hashtags: Array.isArray(result.hashtags) ? result.hashtags : [],
+    imagePrompts: Array.isArray(result.imagePrompts) ? result.imagePrompts : ["blogging", "writing", "creativity"]
+  };
+};

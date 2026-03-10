@@ -137,3 +137,49 @@ export interface CalendarEvent {
   memo: string;
   createdAt: string;
 }
+
+export interface KeywordRecommendation {
+  keyword: string;
+  category: string;
+  type: string;
+  intent: string;
+  competition: string;
+  searchVolume: string;
+  seasonality: string;
+  profitability: string;
+  ageSuitability: string;
+  googlePopularity: string;
+  naverPopularity: string;
+  daumPopularity: string;
+}
+
+export interface GoldenKeywordState {
+  category: string;
+  topic: string;
+  persona: string;
+  keywordRecommendations: KeywordRecommendation[];
+  selectedKeywords: string[];
+  editedKeywords: string[];
+  longtailKeywordRecommendations: string[];
+  selectedLongtailKeywords: string[];
+  editedLongtailKeywords: string[];
+  titleRecommendations: string[];
+  selectedTitle: string;
+  editedTitle: string;
+  toneStyle: string;
+  generatedPost: {
+    title: string;
+    content: string;
+    hashtags: string[];
+  } | null;
+  editedPost: {
+    title: string;
+    content: string;
+  } | null;
+  htmlVersion: string;
+  markdownVersion: string;
+  imageAssets: string[];
+  currentStep: number;
+  savedDraft: boolean;
+  finalConfirmed: boolean;
+}

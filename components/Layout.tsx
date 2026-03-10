@@ -49,11 +49,11 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
     { id: 'introduction', label: 'Smart Income 소개', icon: Sparkles },
     { id: 'dashboard', label: '대시보드', icon: LayoutDashboard },
     { id: 'marketing', label: 'AI 수익형 콘텐츠 생성', icon: Rocket },
-    { id: 'ai-hub', label: 'AI 보험설계 솔루션', icon: Bot },
-    { id: 'secret-room', label: 'Golden System', icon: Crown },
     { id: 'lead-collection', label: '가망고객 수집', icon: Magnet },
     { id: 'crm', label: '가망고객 관리(CRM)', icon: Users },
+    { id: 'ai-hub', label: 'AI 보험설계 솔루션', icon: Bot },
     { id: 'useful-tools', label: '유용한 기능', icon: Wrench },
+    { id: 'secret-room', label: 'Golden System', icon: Crown },
     { id: 'settings', label: '설정', icon: Settings },
   ];
 
@@ -123,7 +123,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                       : 'text-white/60 hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  <div className="flex items-center">
+                  <div className={`flex items-center ${item.id === 'secret-room' && activeTab !== item.id ? 'text-amber-400' : ''}`}>
                     <item.icon className={`mr-3.5 w-5 h-5 transition-transform duration-300 ${activeTab === item.id ? 'scale-110' : 'group-hover:scale-110'}`} />
                     {item.label}
                   </div>

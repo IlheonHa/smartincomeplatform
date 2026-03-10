@@ -31,6 +31,7 @@ const SecretRoom: React.FC<SecretRoomProps> = ({ user }) => {
 
   const tools = [
     {
+      id: 'golden-keyword-writing',
       title: '황금키워드 기반 글쓰기',
       description: '검색량이 많고 경쟁이 적은 황금 키워드를 자동으로 발굴하여 고수익 포스팅을 생성합니다.',
       url: 'https://ais-dev-sjdz3n5o3655tuevoyphpj-21475979035.asia-east1.run.app',
@@ -39,6 +40,7 @@ const SecretRoom: React.FC<SecretRoomProps> = ({ user }) => {
       tag: 'HOT'
     },
     {
+      id: 'detailed-writing',
       title: '세부적선택 글작성',
       description: '타겟 고객의 니즈를 정밀하게 분석하여 전환율을 극대화하는 맞춤형 콘텐츠를 제작합니다.',
       url: 'https://ais-dev-crgiqavbprpftktdma62ct-21475979035.asia-east1.run.app',
@@ -47,6 +49,7 @@ const SecretRoom: React.FC<SecretRoomProps> = ({ user }) => {
       tag: 'PREMIUM'
     },
     {
+      id: 'expert-writing',
       title: '전문적 글작성',
       description: '보험, 금융 등 전문 지식이 필요한 분야에서 신뢰도 높은 고퀄리티 칼럼을 생성합니다.',
       url: 'https://ais-dev-mozfnfunyiqyxygqhx54wn-21475979035.asia-east1.run.app',
@@ -55,6 +58,16 @@ const SecretRoom: React.FC<SecretRoomProps> = ({ user }) => {
       tag: 'EXPERT'
     }
   ];
+
+  const handleToolClick = (tool: any) => {
+    if (tool.url) {
+      window.open(tool.url, '_blank');
+    } else if (tool.id === 'golden-keyword-writing') {
+      if ((window as any).setActiveTab) {
+        (window as any).setActiveTab('golden-keyword-writing');
+      }
+    }
+  };
 
   return (
     <div className="space-y-10 pb-20">
@@ -114,15 +127,13 @@ const SecretRoom: React.FC<SecretRoomProps> = ({ user }) => {
                 </p>
               </div>
               
-              <a 
-                href={tool.url}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button 
+                onClick={() => handleToolClick(tool)}
                 className="flex items-center justify-center w-full py-4 bg-slate-50 text-slate-900 font-bold rounded-2xl group-hover:bg-primary group-hover:text-white transition-all duration-300"
               >
                 도구 실행하기
                 <Zap className="w-4 h-4 ml-2" />
-              </a>
+              </button>
             </div>
           </motion.div>
         ))}

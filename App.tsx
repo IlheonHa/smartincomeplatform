@@ -12,6 +12,7 @@ import SecretRoom from './views/SecretRoom';
 import Introduction from './views/Introduction';
 import LeadCollection from './views/LeadCollection';
 import UsefulTools from './views/UsefulTools';
+import GoldenKeywordWriting from './views/GoldenKeywordWriting';
 import PublicFormView from './views/PublicFormView';
 import Login from './views/Login';
 import Signup from './views/Signup';
@@ -1014,6 +1015,7 @@ const App: React.FC = () => {
       );
       case 'member-management': return <MemberManagement users={users} onUpdateUser={updateUser} onDeleteUser={deleteUser} onDeleteUsers={deleteUsers} onAddUser={handleSignup} onRefresh={fetchAllData} />;
       case 'secret-room': return <SecretRoom user={currentUser} />;
+      case 'golden-keyword-writing': return <GoldenKeywordWriting />;
       case 'admin': return (
         <Admin 
           dashboardData={dashboardData} 

@@ -262,6 +262,39 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
     alert('순수 텍스트 원고가 복사되었습니다.');
   };
 
+  const handleCopyRichText = () => {
+    if (!finalPost) return;
+    
+    let htmlContent = `<h1>${selectedTitle}</h1>\n`;
+    const lines = finalPost.content.split('\n');
+    lines.forEach((line: string) => {
+      if (line.trim().startsWith('##')) {
+        htmlContent += `<h2>${line.replace(/#/g, '').trim()}</h2>\n`;
+      } else if (line.trim().startsWith('###')) {
+        htmlContent += `<h3>${line.replace(/#/g, '').trim()}</h3>\n`;
+      } else if (line.trim()) {
+        htmlContent += `<p>${line.trim()}</p>\n`;
+      }
+    });
+    htmlContent += `<p>${finalPost.hashtags.join(' ')}</p>`;
+
+    try {
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const data = [new ClipboardItem({ 'text/html': blob, 'text/plain': new Blob([htmlContent.replace(/<[^>]*>/g, '')], { type: 'text/plain' }) })];
+      
+      navigator.clipboard.write(data).then(() => {
+        alert('서식이 포함된 원고가 복사되었습니다. 블로그 편집기에 붙여넣으세요.');
+      }).catch(err => {
+        console.error('Failed to copy rich text:', err);
+        // Fallback to HTML copy if rich text fails
+        handleCopyHTML();
+      });
+    } catch (e) {
+      console.error('ClipboardItem not supported:', e);
+      handleCopyHTML();
+    }
+  };
+
   const handleCopyHTML = () => {
     if (!finalPost) return;
     let htmlContent = `<h1>${selectedTitle}</h1>\n`;
@@ -433,7 +466,15 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
       {step === 'TOPIC' && (
         <div className="grid grid-cols-1 gap-10 animate-fade-in">
           <div className="neo-card p-12">
-            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em] block mb-8 ml-2">블로그 포스팅 관심 주제</label>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-start gap-3 mb-8 ml-2">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em] block">블로그 포스팅 관심 주제</label>
+              <div className="flex items-center gap-2 bg-amber-100/50 px-5 py-2.5 rounded-2xl border border-amber-200 shadow-sm">
+                <Sparkles className="w-4 h-4 text-amber-600" />
+                <span className="text-[11px] font-bold text-amber-800">
+                  추천 주제: 보험, 부동산, 재무설계, 건강식품, 교육/강의, 프랜차이즈 등
+                </span>
+              </div>
+            </div>
             <div className="flex flex-col md:flex-row gap-6">
               <div className="flex-1 relative">
                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300" />
@@ -467,7 +508,7 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
                     <ArrowRight className="w-8 h-8 text-primary" />
                   </div>
                   <div className="flex justify-between items-start mb-8">
-                    <span className="bg-primary/5 text-primary text-[10px] font-bold px-4 py-2 rounded-full uppercase tracking-widest border border-primary/10">Strategy {i+1}</span>
+                    <span className="bg-primary/5 text-primary text-[10px] font-bold px-4 py-2 rounded-full uppercase tracking-widest border border-primary/10">Writing {i+1}</span>
                   </div>
                   <h4 className="font-bold text-2xl text-primary mb-4 leading-tight group-hover:text-primary-light transition-colors">{item.optimizedTopic}</h4>
                   <div className="flex items-center gap-2 mb-8">
@@ -487,7 +528,7 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
         <div className="space-y-10 animate-fade-in">
           <div className="neo-card p-12 flex flex-col md:flex-row items-center justify-between gap-8 border-l-[12px] border-l-primary">
             <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-3">Selected Marketing Strategy</p>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-3">Selected Writing Strategy</p>
               <h3 className="text-3xl font-bold text-primary tracking-tight">{selectedTopic}</h3>
             </div>
             <button 
@@ -651,6 +692,13 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
                   >
                     <Copy className="w-4 h-4" />
                     <span>텍스트 복사</span>
+                  </button>
+                  <button 
+                    onClick={handleCopyRichText}
+                    className="px-6 py-3 bg-accent text-primary text-[11px] font-bold rounded-xl hover:bg-accent-dark transition-all shadow-lg shadow-accent/20 flex items-center gap-2 uppercase tracking-widest"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>서식포함 텍스트 복사</span>
                   </button>
                   <button 
                     onClick={handleCopyHTML}
