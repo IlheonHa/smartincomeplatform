@@ -1,14 +1,16 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Lock, Crown, Sparkles, Zap, Target, BookOpen } from 'lucide-react';
-import { User, MembershipGrade, UserRole } from '../types';
+import { Lock, Crown, Sparkles, Zap, Target, BookOpen, UserPlus, Download } from 'lucide-react';
+import { User, MembershipGrade, UserRole, SystemSettings } from '../types';
+import { supabase } from '../src/lib/supabase';
 
 interface SecretRoomProps {
   user: User;
+  systemSettings?: SystemSettings;
 }
 
-const SecretRoom: React.FC<SecretRoomProps> = ({ user }) => {
+const SecretRoom: React.FC<SecretRoomProps> = ({ user, systemSettings }) => {
   const isEligible = user.role === UserRole.ADMIN || 
                     (user.grade === MembershipGrade.DIAMOND || user.grade === MembershipGrade.PLATINUM);
 
@@ -56,10 +58,110 @@ const SecretRoom: React.FC<SecretRoomProps> = ({ user }) => {
       icon: BookOpen,
       color: 'bg-emerald-50 text-emerald-600 border-emerald-100',
       tag: 'EXPERT'
+    },
+    {
+      id: 'naver-neighbor-auto',
+      title: 'Naver Blog 자동이웃신청',
+      description: '네이버 블로그 이웃을 자동으로 신청하여 블로그 지수와 방문자 수를 빠르게 높여주는 자동화 툴입니다.',
+      downloadUrl: systemSettings?.naverNeighborAutoUrl || '/assets/tools/naver_neighbor_auto.zip',
+      icon: UserPlus,
+      color: 'bg-green-50 text-green-600 border-green-100',
+      tag: 'NEW'
     }
   ];
 
-  const handleToolClick = (tool: any) => {
+  const handleToolClick = async (tool: any) => {
+    if (tool.downloadUrl) {
+      const url = tool.downloadUrl;
+      const filename = url.split('/').pop()?.split('?')[0] || 'tool.zip';
+
+      if (url.startsWith('data:')) {
+        try {
+          const parts = url.split(',');
+          const contentType = parts[0].split(':')[1].split(';')[0];
+          const byteCharacters = atob(parts[1]);
+          const byteArrays = [];
+          
+          for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+            const slice = byteCharacters.slice(offset, offset + 512);
+            const byteNumbers = new Array(slice.length);
+            for (let i = 0; i < slice.length; i++) {
+              byteNumbers[i] = slice.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            byteArrays.push(byteArray);
+          }
+          
+          const blob = new Blob(byteArrays, { type: contentType });
+          const blobUrl = URL.createObjectURL(blob);
+          
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+          return;
+        } catch (e) {
+          console.error('Data URL download failed:', e);
+        }
+      } else if (url.includes('supabase.co') && url.includes('/storage/v1/object/')) {
+        try {
+          const urlObj = new URL(url);
+          const pathParts = urlObj.pathname.split('/');
+          const bucket = pathParts[5];
+          const path = pathParts.slice(6).join('/');
+
+          if (bucket && path) {
+            const { data, error } = await supabase.storage.from(bucket).download(path);
+            if (error) throw error;
+
+            const blobUrl = URL.createObjectURL(data);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+            return;
+          }
+        } catch (e) {
+          console.error('SDK download failed, falling back to direct link:', e);
+          const downloadUrl = url.includes('?') ? `${url}&download=${filename}` : `${url}?download=${filename}`;
+          window.open(downloadUrl, '_blank');
+          return;
+        }
+      } else {
+        try {
+          const response = await fetch(url, { mode: 'cors' });
+          if (!response.ok) throw new Error('Network response was not ok');
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+          return;
+        } catch (e) {
+          console.error('External URL download failed:', e);
+        }
+      }
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+
     if (tool.url) {
       window.open(tool.url, '_blank');
     } else if (tool.id === 'golden-keyword-writing') {
@@ -147,7 +249,8 @@ const SecretRoom: React.FC<SecretRoomProps> = ({ user }) => {
               {[
                 '황금 키워드 도구로 매일 3개 이상의 포스팅을 생성하세요.',
                 '타겟 고객의 유입 경로에 맞춰 세부적 선택 글작성을 활용하세요.',
-                '전문적 글작성으로 권위자(Authority) 이미지를 구축하여 전환율을 높이세요.'
+                '전문적 글작성으로 권위자(Authority) 이미지를 구축하여 전환율을 높이세요.',
+                '네이버 블로그 자동이웃신청 툴을 다운로드하여 블로그의 영향력을 확장하세요.'
               ].map((text, i) => (
                 <div key={i} className="flex items-start space-x-3">
                   <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-primary font-bold text-xs shadow-sm flex-shrink-0 mt-0.5">

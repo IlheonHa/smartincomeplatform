@@ -715,8 +715,8 @@ const BusinessCardTool: React.FC = () => {
             
             <div className="p-10 space-y-10 relative z-10">
               {/* Header Section */}
-              <div className="flex justify-between items-start">
-                <div className="space-y-2">
+              <div className="flex justify-between items-start gap-4">
+                <div className="space-y-2 flex-1">
                   <h4 className="text-4xl font-black text-slate-900 tracking-tight leading-none">{name}</h4>
                   <div className="flex items-center gap-2">
                     <div className="w-1 h-3 bg-emerald-500 rounded-full"></div>
@@ -725,19 +725,19 @@ const BusinessCardTool: React.FC = () => {
                 </div>
                 
                 {/* Sophisticated Icon or Profile Image */}
-                <div className="relative">
-                  <div className="w-20 h-20 rounded-[1.5rem] bg-slate-900 overflow-hidden shadow-2xl ring-4 ring-white transition-transform duration-500 group-hover:rotate-3">
+                <div className="relative shrink-0">
+                  <div className="w-32 h-32 rounded-[2rem] bg-slate-900 overflow-hidden shadow-2xl ring-4 ring-white transition-transform duration-500 group-hover:rotate-3">
                     {profileImage ? (
                       <img src={profileImage} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950">
-                        <Award className="w-10 h-10 text-emerald-400" />
+                        <Award className="w-16 h-16 text-emerald-400" />
                       </div>
                     )}
                   </div>
                   {!profileImage && (
-                    <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
-                      <Sparkles className="w-4 h-4 text-white" />
+                    <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+                      <Sparkles className="w-5 h-5 text-white" />
                     </div>
                   )}
                 </div>

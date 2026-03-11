@@ -19,7 +19,7 @@ interface SettingsProps {
   user?: User | null;
   onUpdateUser?: (updatedUser: User) => void;
   systemSettings: SystemSettings;
-  setSystemSettings: (settings: SystemSettings) => void;
+  setSystemSettings: (settings: SystemSettings) => Promise<any>;
 }
 
 const Settings: React.FC<SettingsProps> = ({ onLogout, user, onUpdateUser, systemSettings, setSystemSettings }) => {

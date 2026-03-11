@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS public.system_settings (
     default_monthly_fee NUMERIC DEFAULT 100000,
     sync_dashboard_with_member_fees BOOLEAN DEFAULT true,
     maintenance_mode BOOLEAN DEFAULT false,
+    naver_neighbor_auto_url TEXT,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 

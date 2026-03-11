@@ -1,13 +1,14 @@
 
 import React, { useState } from 'react';
 import { DashboardData, ChartDataPoint, SystemSettings, User, UserRole, AppNotification } from '../types';
-import { Send, Trash2, Users as UsersIcon, User as UserIcon, Bell, Activity } from 'lucide-react';
+import { Send, Trash2, Users as UsersIcon, User as UserIcon, Bell, Activity, Upload, Package, FileArchive, Download } from 'lucide-react';
+import { supabase } from '../src/lib/supabase';
 
 interface AdminProps {
   dashboardData: DashboardData;
   setDashboardData: (data: DashboardData) => void;
   systemSettings: SystemSettings;
-  setSystemSettings: (settings: SystemSettings) => void;
+  setSystemSettings: (settings: SystemSettings) => Promise<any>;
   users: User[];
   onUpdateUser: (user: User) => void;
   notifications: AppNotification[];
@@ -41,6 +42,7 @@ const Admin: React.FC<AdminProps> = ({
   const [notifType, setNotifType] = useState<'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR'>('INFO');
   const [notifTarget, setNotifTarget] = useState<'ALL' | string>('ALL');
   const [selectedNotifs, setSelectedNotifs] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Sync local state when props change
   React.useEffect(() => {
@@ -123,6 +125,167 @@ const Admin: React.FC<AdminProps> = ({
       ...systemSettings,
       [key]: num
     });
+  };
+
+  const handleDownload = async (url: string, filename: string) => {
+    if (!url) return;
+
+    if (url.startsWith('data:')) {
+      try {
+        const parts = url.split(',');
+        const contentType = parts[0].split(':')[1].split(';')[0];
+        const byteCharacters = atob(parts[1]);
+        const byteArrays = [];
+        
+        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+          const slice = byteCharacters.slice(offset, offset + 512);
+          const byteNumbers = new Array(slice.length);
+          for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          byteArrays.push(byteArray);
+        }
+        
+        const blob = new Blob(byteArrays, { type: contentType });
+        const blobUrl = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+      } catch (e) {
+        console.error('Data URL download failed:', e);
+        window.open(url, '_blank');
+      }
+    } else if (url.includes('supabase.co') && url.includes('/storage/v1/object/')) {
+      // For Supabase Storage URLs, use the SDK's download method for maximum reliability
+      try {
+        const urlObj = new URL(url);
+        const pathParts = urlObj.pathname.split('/');
+        // URL format: .../storage/v1/object/public/tools/filename.zip
+        // pathParts: ["", "storage", "v1", "object", "public", "tools", "filename.zip"]
+        const bucket = pathParts[5];
+        const path = pathParts.slice(6).join('/');
+
+        if (!bucket || !path) throw new Error('Invalid Supabase URL format');
+
+        const { data, error } = await supabase.storage.from(bucket).download(path);
+        if (error) throw error;
+
+        const blobUrl = URL.createObjectURL(data);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+      } catch (e) {
+        console.error('SDK download failed, falling back to direct link:', e);
+        // Fallback to direct link with download parameter
+        const downloadUrl = url.includes('?') ? `${url}&download=${filename}` : `${url}?download=${filename}`;
+        window.open(downloadUrl, '_blank');
+      }
+    } else {
+      // For other external URLs
+      try {
+        const response = await fetch(url, { mode: 'cors' });
+        if (!response.ok) throw new Error('Network response was not ok');
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+      } catch (e) {
+        console.error('External URL download failed:', e);
+        window.open(url, '_blank');
+      }
+    }
+  };
+
+  const handleZipUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.name.endsWith('.zip')) {
+        alert('ZIP 파일만 업로드 가능합니다.');
+        return;
+      }
+
+      // Limit size to 50MB
+      if (file.size > 50 * 1024 * 1024) {
+        alert('파일 크기가 너무 큽니다. 50MB 이하의 ZIP 파일만 업로드 가능합니다.');
+        return;
+      }
+      
+      setIsUploading(true);
+      try {
+        // 0. Ensure bucket exists (check first, then try to create)
+        try {
+          const { data: buckets } = await supabase.storage.listBuckets();
+          const exists = buckets?.some(b => b.id === 'tools');
+          if (!exists) {
+            await supabase.storage.createBucket('tools', { public: true });
+          }
+        } catch (bucketErr) {
+          console.warn('[Admin] Bucket check/create failed, proceeding anyway:', bucketErr);
+        }
+
+        // 1. Upload file to Supabase Storage
+        const timestamp = Date.now();
+        const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+        const fileName = `tool_${timestamp}_${cleanName}`;
+        
+        const { data, error } = await supabase.storage
+          .from('tools')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: true,
+            contentType: 'application/zip'
+          });
+
+        if (error) {
+          console.error('Supabase Storage Error:', error);
+          throw new Error(error.message || '파일 업로드 중 오류가 발생했습니다.');
+        }
+
+        // 2. Get Public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('tools')
+          .getPublicUrl(fileName);
+
+        if (!publicUrl) {
+          throw new Error('공개 URL을 생성할 수 없습니다.');
+        }
+
+        // 3. Update System Settings with the new URL
+        const result = await setSystemSettings({
+          ...systemSettings,
+          naverNeighborAutoUrl: publicUrl
+        });
+        
+        if (result?.success) {
+          alert('Naver Blog 자동이웃신청 도구가 성공적으로 업로드되었습니다.');
+        } else {
+          console.error('Database Update Error:', result?.error);
+          alert('업로드에 성공했으나 설정 저장에 실패했습니다. 관리자에게 문의하세요.');
+        }
+      } catch (err: any) {
+        console.error('Upload process error:', err);
+        alert(`업로드 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'}\n\nSupabase Storage 설정(버킷 생성 및 권한)을 확인해주세요.`);
+      } finally {
+        setIsUploading(false);
+        e.target.value = '';
+      }
+    }
   };
 
   const handleChartChange = (index: number, field: keyof ChartDataPoint, value: any) => {
@@ -327,6 +490,70 @@ const Admin: React.FC<AdminProps> = ({
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b bg-gray-50/50 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Package className="w-5 h-5 text-[#002D62]" />
+            <h3 className="font-bold text-gray-800">Golden System 도구 관리</h3>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 space-y-6">
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              <div className="w-16 h-16 bg-white rounded-2xl border flex items-center justify-center shadow-sm">
+                <FileArchive className="w-8 h-8 text-green-500" />
+              </div>
+              <div className="flex-1 text-center md:text-left">
+                <h4 className="text-sm font-bold text-gray-800">Naver Blog 자동이웃신청 (ZIP)</h4>
+                <p className="text-[10px] text-gray-400 mt-1">
+                  현재 파일: {systemSettings.naverNeighborAutoUrl ? (systemSettings.naverNeighborAutoUrl.startsWith('data:') ? '사용자 업로드 파일' : systemSettings.naverNeighborAutoUrl.split('/').pop()) : '기본 파일'}
+                </p>
+              </div>
+              <div className="flex flex-wrap justify-center md:justify-end gap-3">
+                {systemSettings.naverNeighborAutoUrl && (
+                  <button 
+                    onClick={() => handleDownload(
+                      systemSettings.naverNeighborAutoUrl!, 
+                      'naver_neighbor_auto_current.zip'
+                    )}
+                    className="px-6 py-3 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-50 transition-all flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    현재 파일 확인
+                  </button>
+                )}
+                <label className={`px-6 py-3 ${isUploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#002D62] hover:bg-[#001A3A] cursor-pointer'} text-white text-xs font-bold rounded-xl transition-all flex items-center gap-2`}>
+                  {isUploading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      업로드 중...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      새 파일 업로드
+                    </>
+                  )}
+                  <input 
+                    type="file" 
+                    accept=".zip" 
+                    onChange={handleZipUpload} 
+                    className="hidden" 
+                    disabled={isUploading}
+                  />
+                </label>
+              </div>
+            </div>
+            <div className="pt-4 border-t border-gray-200">
+              <p className="text-[10px] text-gray-400 leading-relaxed">
+                * 업로드된 파일은 Golden System 메뉴에서 DIAMOND 등급 이상 회원들에게 즉시 배포됩니다.<br />
+                * ZIP 형식의 파일만 지원하며, 대용량 파일의 경우 업로드 시간이 소요될 수 있습니다.
+              </p>
             </div>
           </div>
         </div>

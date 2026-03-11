@@ -28,7 +28,8 @@ const INITIAL_SYSTEM_SETTINGS: SystemSettings = {
   autoApproveNewMembers: true,
   defaultMonthlyFee: 39000,
   syncDashboardWithMemberFees: false,
-  maintenanceMode: false
+  maintenanceMode: false,
+  naverNeighborAutoUrl: '/assets/tools/naver_neighbor_auto.zip'
 };
 
 const INITIAL_DASHBOARD_DATA: DashboardData = {
@@ -161,7 +162,10 @@ const App: React.FC = () => {
 
       const fetchFromSupabase = (async () => {
         const { data: userData, error: userErr } = await supabase.from('users').select('*');
-        if (userErr) console.error('[App] Supabase fetch users error:', userErr);
+        if (userErr) {
+          console.error('[App] Supabase fetch users error:', userErr);
+          throw new Error(`SUPABASE_ERROR: ${userErr.message}`);
+        }
         
         const { data: leadData, error: leadErr } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
         if (leadErr) console.error('[App] Supabase fetch leads error:', leadErr);
@@ -749,7 +753,11 @@ const App: React.FC = () => {
   // Update System Settings in Supabase
   const updateSystemSettings = async (settings: SystemSettings) => {
     const { error } = await supabase.from('system_settings').upsert(toSnakeCase({ id: 1, ...settings }));
-    if (!error) setSystemSettings(settings);
+    if (!error) {
+      setSystemSettings(settings);
+      return { success: true };
+    }
+    return { success: false, error };
   };
 
   const isPublicForm = window.location.pathname.includes('/form/');
@@ -1014,7 +1022,7 @@ const App: React.FC = () => {
         />
       );
       case 'member-management': return <MemberManagement users={users} onUpdateUser={updateUser} onDeleteUser={deleteUser} onDeleteUsers={deleteUsers} onAddUser={handleSignup} onRefresh={fetchAllData} />;
-      case 'secret-room': return <SecretRoom user={currentUser} />;
+      case 'secret-room': return <SecretRoom user={currentUser} systemSettings={systemSettings} />;
       case 'golden-keyword-writing': return <GoldenKeywordWriting />;
       case 'admin': return (
         <Admin 

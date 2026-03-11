@@ -106,6 +106,7 @@ export interface SystemSettings {
   defaultMonthlyFee: number;
   syncDashboardWithMemberFees: boolean;
   maintenanceMode: boolean;
+  naverNeighborAutoUrl?: string;
 }
 
 export interface AppNotification {
