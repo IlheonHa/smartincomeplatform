@@ -36,7 +36,7 @@ const SecretRoom: React.FC<SecretRoomProps> = ({ user, systemSettings }) => {
       id: 'golden-keyword-writing',
       title: '황금키워드 기반 글쓰기',
       description: '검색량이 많고 경쟁이 적은 황금 키워드를 자동으로 발굴하여 고수익 포스팅을 생성합니다.',
-      url: 'https://ais-dev-sjdz3n5o3655tuevoyphpj-21475979035.asia-east1.run.app',
+      url: 'https://goldensys.netlify.app/',
       icon: Sparkles,
       color: 'bg-amber-50 text-amber-600 border-amber-100',
       tag: 'HOT'
