@@ -42,10 +42,10 @@ const SecretRoom: React.FC<SecretRoomProps> = ({ user, systemSettings }) => {
       tag: 'HOT'
     },
     {
-      id: 'detailed-writing',
-      title: '세부적선택 글작성',
-      description: '타겟 고객의 니즈를 정밀하게 분석하여 전환율을 극대화하는 맞춤형 콘텐츠를 제작합니다.',
-      url: 'https://ais-dev-crgiqavbprpftktdma62ct-21475979035.asia-east1.run.app',
+      id: 'ai-coverage-analysis',
+      title: 'AI 기반 보장분석 시스템',
+      description: 'AI Coverage Analysis for Insurance Advisors. 보험사의 보장분석 리포트를 업로드하면 AI가 자동으로 분석하여 고객 상담에 바로 활용할 수 있는 맞춤형 컨설팅 리포트를 생성합니다.',
+      url: 'https://goldensyssic.netlify.app/',
       icon: Target,
       color: 'bg-blue-50 text-blue-600 border-blue-100',
       tag: 'PREMIUM'
@@ -248,7 +248,7 @@ const SecretRoom: React.FC<SecretRoomProps> = ({ user, systemSettings }) => {
             <div className="space-y-4">
               {[
                 '황금 키워드 도구로 매일 3개 이상의 포스팅을 생성하세요.',
-                '타겟 고객의 유입 경로에 맞춰 세부적 선택 글작성을 활용하세요.',
+                '타겟 고객의 유입 경로에 맞춰 AI 기반 보장분석 시스템을 활용하세요.',
                 '전문적 글작성으로 권위자(Authority) 이미지를 구축하여 전환율을 높이세요.',
                 '네이버 블로그 자동이웃신청 툴을 다운로드하여 블로그의 영향력을 확장하세요.'
               ].map((text, i) => (
