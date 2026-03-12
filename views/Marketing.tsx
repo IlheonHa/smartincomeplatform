@@ -455,7 +455,7 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
             <div className="space-y-3">
               <p className="text-2xl font-bold text-primary tracking-tight">{loadingStatus}</p>
               <p className="text-sm text-slate-400 font-medium leading-relaxed italic">
-                "보험 전문가의 신뢰감을 주는 문장과 <br/> 매력적인 시각 자료를 생성하고 있습니다."
+                "전문가의 신뢰감을 주는 문장과 <br/> 매력적인 시각 자료를 생성하고 있습니다."
               </p>
             </div>
           </div>
@@ -482,7 +482,7 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
                   type="text" 
                   value={userTopic}
                   onChange={(e) => setUserTopic(e.target.value)}
-                  placeholder="예: 30대 남성 암보험 가성비 설계, 치아보험 보장 분석 등"
+                  placeholder="예시) 30대 남성 암보험 가성비 설계, 힐스테이트 신규분양 모집, 건강식품 리뷰"
                   className="w-full pl-16 pr-8 py-6 rounded-[2rem] bg-slate-50 border border-slate-100 focus:border-primary focus:bg-white focus:ring-8 focus:ring-primary/5 outline-none font-bold text-slate-800 transition-all text-lg shadow-inner"
                 />
               </div>

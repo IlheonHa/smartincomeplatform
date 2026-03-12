@@ -253,6 +253,14 @@ const CRM: React.FC<CRMProps> = ({ leads, currentUser, onAddLead, onAddLeads, on
 
   return (
     <div className="space-y-8 animate-fade-in pb-20">
+      {/* Hidden File Input for Excel Import */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleImportExcel} 
+        className="hidden" 
+        accept=".xlsx, .xls"
+      />
       {/* CRM Header Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, idx) => (
