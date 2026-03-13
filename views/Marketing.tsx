@@ -297,7 +297,8 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
 
   const handleCopyHTML = () => {
     if (!finalPost) return;
-    let htmlContent = `<h1>${selectedTitle}</h1>\n`;
+    let htmlContent = `<!-- SEO Meta Description: ${finalPost.metaDescription || ''} -->\n`;
+    htmlContent += `<h1>${selectedTitle}</h1>\n`;
     const lines = finalPost.content.split('\n');
     lines.forEach((line: string) => {
       if (line.trim().startsWith('##')) {
@@ -308,7 +309,7 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
         htmlContent += `<p>${line.trim()}</p>\n`;
       }
     });
-    htmlContent += `<p>${finalPost.hashtags.join(' ')}</p>`;
+    htmlContent += `<p>${finalPost.hashtags.map((h: string) => h.startsWith('#') ? h : '#' + h).join(' ')}</p>`;
     navigator.clipboard.writeText(htmlContent);
     alert('HTML 코드가 복사되었습니다.');
   };
@@ -317,12 +318,19 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
     if (!finalPost) return;
     const jsonData = JSON.stringify({
       title: selectedTitle,
+      metaDescription: finalPost.metaDescription || '',
       content: finalPost.content,
       hashtags: finalPost.hashtags,
       images: finalImages
     }, null, 2);
     navigator.clipboard.writeText(jsonData);
     alert('JSON 데이터가 복사되었습니다.');
+  };
+
+  const handleCopyMeta = () => {
+    if (!finalPost?.metaDescription) return;
+    navigator.clipboard.writeText(finalPost.metaDescription);
+    alert('메타 설명이 복사되었습니다.');
   };
 
   const handleDownloadImage = (url: string, index: number) => {
@@ -722,11 +730,29 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
                 <div className="mb-24 text-center">
                   <div className="flex items-center gap-3 justify-center mb-6">
                     <Sparkles className="w-5 h-5 text-accent" />
-                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.4em]">Final Content Result</span>
+                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.4em]">Final SEO Optimized Content</span>
                   </div>
-                  <h1 className="text-5xl font-bold text-primary leading-[1.1] tracking-tighter">
+                  <h1 className="text-5xl font-bold text-primary leading-[1.1] tracking-tighter mb-8">
                     {selectedTitle}
                   </h1>
+                  {finalPost.metaDescription && (
+                    <div className="max-w-2xl mx-auto p-8 bg-slate-50 rounded-[2rem] border border-slate-100 text-left relative group">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Search className="w-4 h-4 text-slate-400" />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">SEO Meta Description</span>
+                      </div>
+                      <p className="text-slate-600 text-sm font-medium leading-relaxed">
+                        {finalPost.metaDescription}
+                      </p>
+                      <button 
+                        onClick={handleCopyMeta}
+                        className="absolute top-6 right-6 p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-primary hover:border-primary transition-all opacity-0 group-hover:opacity-100 shadow-sm"
+                        title="메타 설명 복사"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="blog-body">
                   {renderContentWithImages()}

@@ -152,7 +152,17 @@ export const optimizeMarketingTopic = async (userTopic: string) => {
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: "당신은 20년 경력의 SEO 전문가이자 마케팅 컨설턴트입니다. 반드시 JSON 형식으로 응답하세요." },
-          { role: "user", content: `사용자가 입력한 초기 주제: "${userTopic}". 위 주제를 바탕으로 네이버, 구글 검색량과 트렌드를 고려하여 더 강력한 5가지 최적화 주제를 추천하고, 각 주제별 예상 타겟층을 정의하세요. 결과는 반드시 {"topics": [{"optimizedTopic": "...", "targetAudience": "...", "reason": "..."}]} 형식의 JSON 객체여야 합니다.` }
+          { role: "user", content: `사용자가 입력한 초기 주제: "${userTopic}". 
+          당신은 20년 경력의 SEO 전문가이자 마케팅 컨설턴트입니다. 
+          네이버, 구글, 유튜브의 최신 검색 트렌드와 사용자 의도(Search Intent)를 분석하여, 
+          클릭률(CTR)과 체류 시간을 극대화할 수 있는 5가지 최적화 주제를 추천하세요.
+          
+          [분석 가이드라인]
+          1. **검색 의도 분석**: 정보성, 상업성, 탐색성 의도를 구분하여 제안하세요.
+          2. **롱테일 키워드 전략**: 경쟁은 낮고 전환율은 높은 구체적인 주제를 포함하세요.
+          3. **타겟 세분화**: 연령, 성별, 관심사뿐만 아니라 '고민 지점(Pain Point)'을 명시하세요.
+          
+          결과는 반드시 {"topics": [{"optimizedTopic": "...", "targetAudience": "...", "reason": "..."}]} 형식의 JSON 객체여야 합니다.` }
         ],
         response_format: { type: "json_object" }
       });
@@ -179,7 +189,17 @@ export const optimizeMarketingTopic = async (userTopic: string) => {
   if (!ai) throw new Error("Gemini API key is missing and OpenAI failed.");
 
   const response = await callGemini(ai, 'gemini-3-flash-preview', {
-    contents: `사용자가 입력한 초기 주제: "${userTopic}". 당신은 20년 경력의 SEO 전문가이자 마케팅 컨설턴트입니다. 위 주제를 바탕으로 네이버, 구글 검색량과 트렌드를 고려하여 더 강력한 5가지 최적화 주제를 추천하고, 각 주제별 예상 타겟층을 정의하세요. 결과는 반드시 JSON 형식이어야 합니다.`,
+    contents: `사용자가 입력한 초기 주제: "${userTopic}". 
+    당신은 20년 경력의 SEO 전문가이자 마케팅 컨설턴트입니다. 
+    네이버, 구글, 유튜브의 최신 검색 트렌드와 사용자 의도(Search Intent)를 분석하여, 
+    클릭률(CTR)과 체류 시간을 극대화할 수 있는 5가지 최적화 주제를 추천하세요.
+    
+    [분석 가이드라인]
+    1. **검색 의도 분석**: 정보성, 상업성, 탐색성 의도를 구분하여 제안하세요.
+    2. **롱테일 키워드 전략**: 경쟁은 낮고 전환율은 높은 구체적인 주제를 포함하세요.
+    3. **타겟 세분화**: 연령, 성별, 관심사뿐만 아니라 '고민 지점(Pain Point)'을 명시하세요.
+    
+    결과는 반드시 JSON 형식이어야 합니다.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: {
@@ -209,11 +229,19 @@ export const generateGoldenKeywords = async (topic: string, target: string) => {
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: "당신은 천재 블로거이자 키워드 분석 전문가입니다. 반드시 JSON 형식으로 응답하세요." },
-          { role: "user", content: `주제: "${topic}", 타겟: "${target}". 황금 키워드 20개를 추출하고 메타데이터를 포함하세요. 
+          { role: "user", content: `주제: "${topic}", 타겟: "${target}". 
+          당신은 데이터 기반의 키워드 분석 전문가입니다. 
+          검색량은 많지만 경쟁은 적은 '황금 키워드' 20개를 추출하세요.
+          
+          [키워드 선정 기준]
+          1. **LSI 키워드**: 주제와 연관된 의미적 키워드를 포함하여 SEO 점수를 높이세요.
+          2. **구매 여정 단계**: 인지, 고려, 결정 단계별 키워드를 고르게 배치하세요.
+          3. **데이터 추정**: 검색량(Volume), 경쟁 정도(Competition), 수익성(Profitability)을 상/중/하로 평가하세요.
+          
           결과는 반드시 다음 구조의 JSON 객체여야 합니다:
           {
             "keywords": [
-              { "keyword": "...", "category": "...", "intent": "...", "competition": "하/중/상", "volume": "...", "profitability": "...", "naverPop": "..." }
+              { "keyword": "...", "category": "...", "intent": "...", "competition": "하/중/상", "volume": "상/중/하", "profitability": "상/중/하", "naverPop": "상/중/하" }
             ],
             "top5Recommendations": [
               { "keyword": "...", "reason": "..." }
@@ -239,7 +267,10 @@ export const generateGoldenKeywords = async (topic: string, target: string) => {
   if (!ai) throw new Error("Gemini API key is missing and OpenAI failed.");
 
   const response = await callGemini(ai, 'gemini-3-flash-preview', {
-    contents: `당신은 천재 블로거입니다. 주제: "${topic}", 타겟: "${target}". 황금 키워드 20개를 추출하고 메타데이터를 포함하세요. 결과는 JSON 형식이어야 합니다.`,
+    contents: `당신은 데이터 기반의 키워드 분석 전문가입니다. 주제: "${topic}", 타겟: "${target}". 
+    검색량은 많지만 경쟁은 적은 '황금 키워드' 20개를 추출하고 메타데이터를 포함하세요. 
+    LSI 키워드와 구매 여정 단계를 고려하세요.
+    결과는 JSON 형식이어야 합니다.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: {
@@ -312,21 +343,26 @@ export const generateBlogPost = async (title: string, keywords: string[], style:
           말투 스타일: "${style}"
           타겟 독자: "${target}"
           
-          [필수 가독성 규칙]
-          1. 100% 한글만 사용 (전문 용어는 괄호 안에 영문/한자 병기).
-          2. 가독성을 위해 소제목(예: ## 소제목)을 3개 이상 사용하세요.
-          3. **와 같은 마크다운 강조 기호(볼드체 기호)를 절대 사용하지 마세요.** 강조가 필요하면 문맥상 자연스럽게 처리하세요.
-          4. <h1>, <p> 등 HTML 태그를 절대 사용하지 마세요. 순수 마크다운(##, ### 등)만 사용하세요.
-          5. 한 문장 쓰고 무조건 줄바꿈(엔터)을 하세요. 한 문단은 3줄을 넘지 않도록 짧게 구성하세요.
-          6. 내용: 서론(300자), 본론(소제목별 상세 설명), 결론(요약 및 인사이트). 총 1500-2000자.
-          7. 마지막에 해시태그 10개를 포함하세요.
-          8. 이미지 삽입 위치를 [IMAGE_PLACEHOLDER_1], [IMAGE_PLACEHOLDER_2], [IMAGE_PLACEHOLDER_3] 형식으로 서론, 본론, 결론 위치에 각각 하나씩 배치하세요.
-          9. imagePrompts는 서론, 본론, 결론의 핵심 내용을 가장 잘 나타내는 구체적인 이미지 묘사여야 합니다. 
-             - 반드시 "Photorealistic photo style"을 포함하세요.
-             - 사람이 등장할 경우 반드시 "Korean person", "Korean family", "Korean consultant" 등 한국인임을 명시하세요.
-             - 모든 프롬프트는 영문으로 작성하세요.
+          [SEO 및 품질 최적화 규칙]
+          1. **전문성 및 신뢰성(E-E-A-T)**: 해당 분야의 20년 경력 전문가가 작성한 것처럼 깊이 있는 통찰력과 구체적인 사례를 포함하세요.
+          2. **SEO 구조**: 
+             - 서론: 독자의 문제점을 공감하고 해결책을 제시하는 강력한 훅(Hook)으로 시작하세요.
+             - 본론: 정보성 가치가 높은 내용을 3개 이상의 소제목(##)으로 나누어 상세히 설명하세요.
+             - 결론: 핵심 내용을 요약하고 독자의 행동을 유도하는 강력한 CTA(Call to Action)를 포함하세요.
+          3. **키워드 배치**: 선택된 키워드들을 서론, 소제목, 본문 내용에 자연스럽게 녹여내어 검색 엔진 최적화를 극대화하세요.
+          4. **가독성 최적화**: 
+             - 한 문장은 짧고 명확하게 작성하세요.
+             - 복잡한 정보는 불렛 포인트나 번호 매기기를 활용하여 시각적으로 정리하세요.
+             - 한 문단은 3줄을 넘지 않도록 구성하세요.
+          5. **금지 사항**: 
+             - **와 같은 마크다운 강조 기호(볼드체 기호)를 절대 사용하지 마세요.**
+             - HTML 태그를 절대 사용하지 마세요. 순수 마크다운(##, ### 등)만 사용하세요.
+          6. **이미지 전략**: [IMAGE_PLACEHOLDER_1], [IMAGE_PLACEHOLDER_2], [IMAGE_PLACEHOLDER_3]를 서론 하단, 본론 중간, 결론 상단에 배치하세요.
+          7. **이미지 프롬프트(imagePrompts)**: 각 섹션의 감성적/정보적 가치를 극대화할 수 있는 고품질 이미지 묘사를 영문으로 작성하세요. 
+             - "High-end professional photography", "Cinematic lighting", "Minimalist aesthetic" 등의 표현을 활용하세요.
+             - 한국인 타겟인 경우 "Modern Korean lifestyle", "Professional Korean consultant" 등을 명시하세요.
           
-          결과는 반드시 {"finalTitle": "...", "content": "...", "hashtags": [...], "imagePrompts": [...]} 형식의 JSON 객체여야 합니다.` }
+          결과는 반드시 {"finalTitle": "...", "metaDescription": "...", "content": "...", "hashtags": [...], "imagePrompts": [...]} 형식의 JSON 객체여야 합니다.` }
         ],
         response_format: { type: "json_object" }
       }, 60000); // 60s timeout for long blog posts
@@ -354,29 +390,26 @@ export const generateBlogPost = async (title: string, keywords: string[], style:
     말투 스타일: "${style}"
     타겟 독자: "${target}"
     
-    [필수 가독성 규칙]
-    1. 100% 한글만 사용 (전문 용어는 괄호 안에 영문/한자 병기).
-    2. 가독성을 위해 소제목(예: ## 소제목)을 3개 이상 사용하세요.
-    3. **와 같은 마크다운 강조 기호(볼드체 기호)를 절대 사용하지 마세요.** 강조가 필요하면 문맥상 자연스럽게 처리하세요.
-    4. 한 문장 쓰고 무조건 줄바꿈(엔터)을 하세요. 한 문단은 3줄을 넘지 않도록 짧게 구성하세요.
-    5. 내용: 서론(300자), 본론(소제목별 상세 설명), 결론(요약 및 인사이트). 총 1500-2000자.
-    6. 마지막에 해시태그 10개를 포함하세요.
-    7. 이미지 삽입 위치를 [IMAGE_PLACEHOLDER_1], [IMAGE_PLACEHOLDER_2], [IMAGE_PLACEHOLDER_3] 형식으로 서론, 본론, 결론 위치에 각각 하나씩 배치하세요.
-    8. imagePrompts는 서론, 본론, 결론의 핵심 내용을 가장 잘 나타내는 구체적인 이미지 묘사여야 합니다. 
-       - 반드시 "Photorealistic photo style"을 포함하세요.
-       - 사람이 등장할 경우 반드시 "Korean person", "Korean family", "Korean consultant" 등 한국인임을 명시하세요.
-       - 모든 프롬프트는 영문으로 작성하세요.`,
+    [SEO 및 품질 최적화 규칙]
+    1. **전문성 및 신뢰성(E-E-A-T)**: 해당 분야의 전문가가 작성한 것처럼 깊이 있는 통찰력을 포함하세요.
+    2. **SEO 구조**: 서론(훅), 본론(3개 이상의 소제목), 결론(CTA) 구조를 엄격히 지키세요.
+    3. **키워드 배치**: 키워드들을 자연스럽게 문맥에 녹여내세요.
+    4. **가독성**: 문장은 짧게, 문단은 3줄 이내로, 불렛 포인트를 적극 활용하세요.
+    5. **강조 기호 금지**: ** 기호를 절대 사용하지 마세요.
+    6. **이미지 전략**: [IMAGE_PLACEHOLDER_1, 2, 3]을 적절한 위치에 배치하세요.
+    7. **이미지 프롬프트**: "High-end professional photography", "Modern Korean lifestyle" 스타일의 영문 프롬프트를 생성하세요.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
         properties: {
           finalTitle: { type: Type.STRING },
+          metaDescription: { type: Type.STRING, description: "SEO meta description for the post" },
           content: { type: Type.STRING },
           hashtags: { type: Type.ARRAY, items: { type: Type.STRING } },
-          imagePrompts: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Must contain exactly 3 prompts for intro, body, and conclusion" }
+          imagePrompts: { type: Type.ARRAY, items: { type: Type.STRING } }
         },
-        required: ["finalTitle", "content", "hashtags", "imagePrompts"]
+        required: ["finalTitle", "metaDescription", "content", "hashtags", "imagePrompts"]
       }
     }
   });
@@ -392,8 +425,8 @@ export const generateBlogPost = async (title: string, keywords: string[], style:
 export const generateBlogImage = async (prompt: string) => {
   checkAIAvailability();
   
-  // Enhance prompt with photorealistic and Korean person requirements
-  const enhancedPrompt = `${prompt}, photorealistic photo style, high quality, 8k, highly detailed. If people are in the image, they must be Korean.`;
+  // Enhance prompt with high-end photography and Korean context
+  const enhancedPrompt = `${prompt}, high-end professional photography, cinematic lighting, studio quality, highly detailed, 8k resolution, minimalist aesthetic. If people are featured, they must be modern Korean people with natural expressions.`;
 
   const openaiKey = getOpenAIKey();
   if (openaiKey) {
@@ -460,9 +493,10 @@ export const rewriteBlogPostForFCPA = async (post: any) => {
 
     [원본 데이터]
     제목: ${post.finalTitle}
+    메타 설명: ${post.metaDescription || ''}
     본문: ${post.content}
 
-    결과는 반드시 {"finalTitle": "수정된 제목", "content": "수정된 본문"} 형식의 JSON 객체여야 합니다.
+    결과는 반드시 {"finalTitle": "수정된 제목", "metaDescription": "수정된 메타 설명", "content": "수정된 본문"} 형식의 JSON 객체여야 합니다.
   `;
 
   const openaiKey = getOpenAIKey();
@@ -479,6 +513,7 @@ export const rewriteBlogPostForFCPA = async (post: any) => {
       const result = safeJsonParse(data.choices[0].message.content);
       return {
         finalTitle: result.finalTitle || post.finalTitle,
+        metaDescription: result.metaDescription || post.metaDescription,
         content: result.content || post.content,
         hashtags: post.hashtags,
         imagePrompts: post.imagePrompts
@@ -500,9 +535,10 @@ export const rewriteBlogPostForFCPA = async (post: any) => {
         type: Type.OBJECT,
         properties: {
           finalTitle: { type: Type.STRING },
+          metaDescription: { type: Type.STRING },
           content: { type: Type.STRING }
         },
-        required: ["finalTitle", "content"]
+        required: ["finalTitle", "metaDescription", "content"]
       }
     }
   });
@@ -510,6 +546,7 @@ export const rewriteBlogPostForFCPA = async (post: any) => {
   const result = safeJsonParse(response.text);
   return {
     finalTitle: result.finalTitle || post.finalTitle,
+    metaDescription: result.metaDescription || post.metaDescription,
     content: result.content || post.content,
     hashtags: post.hashtags,
     imagePrompts: post.imagePrompts
