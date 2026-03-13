@@ -52,9 +52,9 @@ const SecretRoom: React.FC<SecretRoomProps> = ({ user, systemSettings }) => {
     },
     {
       id: 'expert-writing',
-      title: '전문적 글작성',
-      description: '보험, 금융 등 전문 지식이 필요한 분야에서 신뢰도 높은 고퀄리티 칼럼을 생성합니다.',
-      url: 'https://ais-dev-mozfnfunyiqyxygqhx54wn-21475979035.asia-east1.run.app',
+      title: 'Smart Income Threads Engine',
+      description: '스마트한 AI가 추천하는 Smart Income Threads Engine',
+      url: 'https://smartthreads.netlify.app/',
       icon: BookOpen,
       color: 'bg-emerald-50 text-emerald-600 border-emerald-100',
       tag: 'EXPERT'
@@ -249,7 +249,7 @@ const SecretRoom: React.FC<SecretRoomProps> = ({ user, systemSettings }) => {
               {[
                 '황금 키워드 도구로 매일 3개 이상의 포스팅을 생성하세요.',
                 '타겟 고객의 유입 경로에 맞춰 AI 기반 보장분석 시스템을 활용하세요.',
-                '전문적 글작성으로 권위자(Authority) 이미지를 구축하여 전환율을 높이세요.',
+                'Smart Income Threads Engine으로 권위자(Authority) 이미지를 구축하여 전환율을 높이세요.',
                 '네이버 블로그 자동이웃신청 툴을 다운로드하여 블로그의 영향력을 확장하세요.'
               ].map((text, i) => (
                 <div key={i} className="flex items-start space-x-3">
