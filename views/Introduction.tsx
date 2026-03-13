@@ -65,7 +65,7 @@ const Introduction: React.FC<IntroductionProps> = ({ onNavigate }) => {
       icon: Crown,
       title: "Golden System",
       tabId: "secret-room",
-      desc: "Nolbu’s Golden Write만의 독점 자동화 엔진. 황금 키워드 발굴부터 고수익 포스팅 생성까지 시스템이 스스로 작동합니다.",
+      desc: "Smart Income만의 독점 자동화 엔진. 황금 키워드 발굴부터 고수익 포스팅 생성까지 시스템이 스스로 작동합니다.",
       tags: ["Secret", "Exclusive", "24/7"],
       color: "from-amber-500 to-orange-600"
     },
@@ -120,19 +120,19 @@ const Introduction: React.FC<IntroductionProps> = ({ onNavigate }) => {
           >
             <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-white/5 border border-white/10 mb-12 backdrop-blur-md">
               <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-accent">Nolbu’s Golden Write Revolution</span>
+              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-accent">Smart Income AI Revolution</span>
             </div>
             
             <h1 className="text-4xl lg:text-6xl font-black text-white mb-10 leading-[1.1] tracking-tight">
               노동이 아닌 <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-white">황금 키워드로</span> <br/>
-              수익을 창출하세요.
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-white">AI 시스템으로</span> <br/>
+              수익을 자동화하세요.
             </h1>
             
             <p className="text-xl lg:text-2xl text-blue-100/70 font-medium mb-16 leading-relaxed max-w-3xl mx-auto">
-              Nolbu’s Golden Write는 단순한 도구가 아닙니다. <br/>
-              AI가 당신을 대신해 황금 키워드를 발굴하고, 고수익 포스팅을 <br/>
-              <span className="text-white font-bold">자동으로 완성하는 수익형 글쓰기 플랫폼</span>입니다.
+              Smart Income은 단순한 도구가 아닙니다. <br/>
+              AI가 당신을 대신해 수익 모델을 발굴하고, 고효율 시스템을 <br/>
+              <span className="text-white font-bold">24시간 자동으로 가동하는 AI N잡 플랫폼</span>입니다.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
@@ -165,14 +165,14 @@ const Introduction: React.FC<IntroductionProps> = ({ onNavigate }) => {
               <h3 className="text-accent-dark font-black text-sm uppercase tracking-widest">The Vision</h3>
               <h2 className="text-4xl lg:text-5xl font-black text-primary leading-tight tracking-tight">
                 왜 모두가 <br/>
-                Nolbu’s Golden Write에 <br/>
+                Smart Income에 <br/>
                 열광할까요?
               </h2>
             </div>
             <p className="text-lg text-gray-500 font-medium leading-relaxed">
-              기존의 블로그는 결국 당신의 '시간'을 '글쓰기'에 쏟는 노동이었습니다. <br/>
-              Nolbu’s Golden Write는 AI 기술을 통해 이 공식을 파괴합니다. <br/>
-              우리는 당신이 잠든 시간에도 수익을 만들어내는 황금 키워드 시스템을 제공합니다.
+              기존의 N잡은 결국 당신의 '시간'을 '노동'에 쏟는 또 다른 직업이었습니다. <br/>
+              Smart Income은 AI 기술을 통해 이 공식을 파괴합니다. <br/>
+              우리는 당신이 잠든 시간에도 시스템이 스스로 수익을 만들어내는 자동화 파이프라인을 제공합니다.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
               {benefits.map((benefit, idx) => (
@@ -401,7 +401,7 @@ const Introduction: React.FC<IntroductionProps> = ({ onNavigate }) => {
                 referrerPolicy="no-referrer"
               />
             </div>
-            <p className="text-xs font-black text-gray-400 tracking-widest uppercase">Nolbu’s Golden Write Ecosystem © 2026</p>
+            <p className="text-xs font-black text-gray-400 tracking-widest uppercase">Smart Income Ecosystem © 2026</p>
           </div>
           <div className="flex gap-8 text-[10px] font-black text-gray-400 uppercase tracking-widest">
             <a href="#" className="hover:text-primary transition-colors">Privacy Policy</a>
