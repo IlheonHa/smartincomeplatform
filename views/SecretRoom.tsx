@@ -14,7 +14,7 @@ const SecretRoom: React.FC<SecretRoomProps> = ({ user, systemSettings }) => {
   const isEligible = user.role === UserRole.ADMIN || 
                     (user.grade === MembershipGrade.DIAMOND || user.grade === MembershipGrade.PLATINUM);
 
-  const goldenDashboardImage = "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&q=80&w=1000";
+  const goldenDashboardImage = "https://images.unsplash.com/photo-1639322537228-f710d846310a?auto=format&fit=crop&q=80&w=1000";
 
   if (!isEligible) {
     return (
@@ -259,10 +259,10 @@ const SecretRoom: React.FC<SecretRoomProps> = ({ user, systemSettings }) => {
             <div className="space-y-4">
               {[
                 '황금 키워드 도구로 매일 3개 이상의 포스팅을 생성하세요.',
-                'Smart Income Threads Engine으로 권위자(Authority) 이미지를 구축하여 전환율을 높이세요.',
+                'Smart Income Threads Engine으로 매일 3개 이상의 글을 올리세요.',
                 'Smart Income Shorts & Reels Studio를 활용하여 고효율 숏폼 콘텐츠를 대량 생산하세요.',
-                '네이버 블로그 자동이웃신청 툴을 다운로드하여 블로그의 영향력을 확장하세요.',
-                '타겟 고객의 유입 경로에 맞춰 AI 기반 보장분석 시스템을 활용하세요.'
+                '네이버 블로그 자동이웃신청 툴을 다운로드하여 자동으로 이웃을 추가하세요.',
+                'AI 기반 보장분석 시스템을 활용해 가망고객으로부터 신뢰를 확보하세요.'
               ].map((text, i) => (
                 <div key={i} className="flex items-start space-x-3">
                   <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-primary font-bold text-xs shadow-sm flex-shrink-0 mt-0.5">
