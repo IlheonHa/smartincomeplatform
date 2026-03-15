@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Lock, Crown, Sparkles, Zap, Target, BookOpen, UserPlus, Download } from 'lucide-react';
+import { Lock, Crown, Sparkles, Zap, Target, BookOpen, UserPlus, Download, Video } from 'lucide-react';
 import { User, MembershipGrade, UserRole, SystemSettings } from '../types';
 import { supabase } from '../src/lib/supabase';
 
@@ -13,6 +13,8 @@ interface SecretRoomProps {
 const SecretRoom: React.FC<SecretRoomProps> = ({ user, systemSettings }) => {
   const isEligible = user.role === UserRole.ADMIN || 
                     (user.grade === MembershipGrade.DIAMOND || user.grade === MembershipGrade.PLATINUM);
+
+  const goldenDashboardImage = "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&q=80&w=1000";
 
   if (!isEligible) {
     return (
@@ -42,15 +44,6 @@ const SecretRoom: React.FC<SecretRoomProps> = ({ user, systemSettings }) => {
       tag: 'HOT'
     },
     {
-      id: 'ai-coverage-analysis',
-      title: 'AI 기반 보장분석 시스템',
-      description: 'AI Coverage Analysis for Insurance Advisors. 보험사의 보장분석 리포트를 업로드하면 AI가 자동으로 분석하여 고객 상담에 바로 활용할 수 있는 맞춤형 컨설팅 리포트를 생성합니다.',
-      url: 'https://goldensyssic.netlify.app/',
-      icon: Target,
-      color: 'bg-blue-50 text-blue-600 border-blue-100',
-      tag: 'PREMIUM'
-    },
-    {
       id: 'expert-writing',
       title: 'Smart Income Threads Engine',
       description: '스마트한 AI가 추천하는 Smart Income Threads Engine',
@@ -60,6 +53,15 @@ const SecretRoom: React.FC<SecretRoomProps> = ({ user, systemSettings }) => {
       tag: 'EXPERT'
     },
     {
+      id: 'shorts-reels-studio',
+      title: 'Smart Income Shorts & Reels Studio',
+      description: 'AI가 자동으로 숏폼과 릴스 영상을 기획하고 제작을 도와주는 스튜디오입니다.',
+      url: 'https://smartsr.netlify.app/',
+      icon: Video,
+      color: 'bg-purple-50 text-purple-600 border-purple-100',
+      tag: 'NEW'
+    },
+    {
       id: 'naver-neighbor-auto',
       title: 'Naver Blog 자동이웃신청',
       description: '네이버 블로그 이웃을 자동으로 신청하여 블로그 지수와 방문자 수를 빠르게 높여주는 자동화 툴입니다.',
@@ -67,6 +69,15 @@ const SecretRoom: React.FC<SecretRoomProps> = ({ user, systemSettings }) => {
       icon: UserPlus,
       color: 'bg-green-50 text-green-600 border-green-100',
       tag: 'NEW'
+    },
+    {
+      id: 'ai-coverage-analysis',
+      title: 'AI 기반 보장분석 시스템',
+      description: 'AI Coverage Analysis for Insurance Advisors. 보험사의 보장분석 리포트를 업로드하면 AI가 자동으로 분석하여 고객 상담에 바로 활용할 수 있는 맞춤형 컨설팅 리포트를 생성합니다.',
+      url: 'https://goldensyssic.netlify.app/',
+      icon: Target,
+      color: 'bg-blue-50 text-blue-600 border-blue-100',
+      tag: 'PREMIUM'
     }
   ];
 
@@ -248,9 +259,10 @@ const SecretRoom: React.FC<SecretRoomProps> = ({ user, systemSettings }) => {
             <div className="space-y-4">
               {[
                 '황금 키워드 도구로 매일 3개 이상의 포스팅을 생성하세요.',
-                '타겟 고객의 유입 경로에 맞춰 AI 기반 보장분석 시스템을 활용하세요.',
                 'Smart Income Threads Engine으로 권위자(Authority) 이미지를 구축하여 전환율을 높이세요.',
-                '네이버 블로그 자동이웃신청 툴을 다운로드하여 블로그의 영향력을 확장하세요.'
+                'Smart Income Shorts & Reels Studio를 활용하여 고효율 숏폼 콘텐츠를 대량 생산하세요.',
+                '네이버 블로그 자동이웃신청 툴을 다운로드하여 블로그의 영향력을 확장하세요.',
+                '타겟 고객의 유입 경로에 맞춰 AI 기반 보장분석 시스템을 활용하세요.'
               ].map((text, i) => (
                 <div key={i} className="flex items-start space-x-3">
                   <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-primary font-bold text-xs shadow-sm flex-shrink-0 mt-0.5">
@@ -261,8 +273,17 @@ const SecretRoom: React.FC<SecretRoomProps> = ({ user, systemSettings }) => {
               ))}
             </div>
           </div>
-          <div className="w-full md:w-72 aspect-video md:aspect-square bg-slate-200 rounded-[2rem] flex items-center justify-center text-slate-400 font-bold text-sm italic">
-            Tutorial Video
+          <div className="w-full md:w-72 aspect-video md:aspect-square bg-slate-200 rounded-[2rem] overflow-hidden flex items-center justify-center relative group shadow-inner">
+            <img 
+              src={goldenDashboardImage} 
+              alt="Golden System Dashboard" 
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              referrerPolicy="no-referrer"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
+            <div className="absolute bottom-4 left-4 right-4">
+              <div className="text-[10px] font-bold text-white/90 uppercase tracking-widest drop-shadow-md">Golden Keyword AI Engine</div>
+            </div>
           </div>
         </div>
       </div>
