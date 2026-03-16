@@ -49,7 +49,7 @@ const Introduction: React.FC<IntroductionProps> = ({ onNavigate }) => {
       icon: Rocket,
       title: "AI 수익형 콘텐츠 생성",
       tabId: "marketing",
-      desc: "블로그, 숏폼, SNS 포스팅까지. AI가 당신의 목소리를 학습하여 고효율 수익형 콘텐츠를 무한 생성합니다.",
+      desc: "블로그, SNS 포스팅까지. AI가 학습하고 분석하여하여 고효율 수익형 콘텐츠를 무한 생성합니다.",
       tags: ["Blog", "Short-form", "SEO"],
       color: "from-blue-500 to-indigo-600"
     },
@@ -57,7 +57,7 @@ const Introduction: React.FC<IntroductionProps> = ({ onNavigate }) => {
       icon: Bot,
       title: "AI 보험설계 솔루션",
       tabId: "ai-hub",
-      desc: "복잡한 약관과 설계를 AI가 단 몇 초 만에 분석합니다. 고객에게 가장 최적화된 제안서를 자동으로 완성하세요.",
+      desc: "복잡한 약관과 설계를 AI가 순식간에 분석해 제안합니다. 고객에게 가장 최적화된 제안서를 자동으로 완성하세요.",
       tags: ["Analysis", "Proposal", "Automation"],
       color: "from-emerald-500 to-teal-600"
     },
@@ -65,7 +65,7 @@ const Introduction: React.FC<IntroductionProps> = ({ onNavigate }) => {
       icon: Crown,
       title: "Golden System",
       tabId: "secret-room",
-      desc: "Smart Income만의 독점 자동화 엔진. 황금 키워드 발굴부터 고수익 포스팅 생성까지 시스템이 스스로 작동합니다.",
+      desc: "오직 VIP에게만 공개되는 Golden System Smart Income만의 독점 자동화 엔진으로 고수익을 시스템이 스스로 만들어갑니다.",
       tags: ["Secret", "Exclusive", "24/7"],
       color: "from-amber-500 to-orange-600"
     },
