@@ -49,7 +49,7 @@ const Introduction: React.FC<IntroductionProps> = ({ onNavigate }) => {
       icon: Rocket,
       title: "AI 수익형 콘텐츠 생성",
       tabId: "marketing",
-      desc: "블로그, SNS 포스팅까지. AI가 학습하고 분석하여하여 고효율 수익형 콘텐츠를 무한 생성합니다.",
+      desc: "블로그, SNS 포스팅까지. AI가 학습하고 분석하여 고효율 수익형 콘텐츠를 무한 생성합니다.",
       tags: ["Blog", "Short-form", "SEO"],
       color: "from-blue-500 to-indigo-600"
     },
