@@ -65,7 +65,7 @@ const Introduction: React.FC<IntroductionProps> = ({ onNavigate }) => {
       icon: Crown,
       title: "Golden System",
       tabId: "secret-room",
-      desc: "오직 VIP에게만 공개되는 Golden System Smart Income만의 독점 자동화 엔진으로 고수익을 시스템이 스스로 만들어갑니다.",
+      desc: "오직 VIP에게만 공개되는 Golden System Smart Income만의 독점 자동화 엔진. 황금 키워드 발굴부터 고수익 포스팅 생성까지 시스템이 스스로 작동합니다.",
       tags: ["Secret", "Exclusive", "24/7"],
       color: "from-amber-500 to-orange-600"
     },

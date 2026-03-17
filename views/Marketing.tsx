@@ -81,6 +81,8 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
     setFinalImages([]);
   };
 
+  const [isAutoGenerating, setIsAutoGenerating] = useState(false);
+
   const handleTopicOptimize = async () => {
     if (!hasApiKey) {
       alert("API 키가 설정되지 않았습니다. [설정] 메뉴의 'AI 엔진 API 연동 설정'에서 Gemini 또는 OpenAI 키를 입력해주세요.");
@@ -149,6 +151,10 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
     if (!selectedTitle) return alert('제목을 선택해주세요.');
     setLoading(true);
     setLoadingStatus('전략적 블로그 포스팅을 작성 중입니다...');
+    
+    // Ensure the message is visible for at least 2 seconds
+    await new Promise(r => setTimeout(r, 2000));
+    
     try {
       const post = await generateBlogPost(selectedTitle, selectedKeywords, style, selectedTarget);
       setFinalPost(post);
@@ -195,6 +201,83 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
     } finally {
       setLoading(false);
       setIsFCPAProcessing(false);
+    }
+  };
+
+  const handleAutoGenerate = async () => {
+    if (!hasApiKey) {
+      alert("API 키가 설정되지 않았습니다. [설정] 메뉴의 'AI 엔진 API 연동 설정'에서 Gemini 또는 OpenAI 키를 입력해주세요.");
+      return;
+    }
+
+    let currentTopic = userTopic;
+    if (!currentTopic) {
+      const defaultTopics = ['암보험 가성비 설계', '사회초년생 재테크 전략', '부동산 소액 투자 방법', '건강한 다이어트 식단', '효율적인 시간 관리법', '최신 IT 트렌드 분석'];
+      currentTopic = defaultTopics[Math.floor(Math.random() * defaultTopics.length)];
+      setUserTopic(currentTopic);
+    }
+
+    setIsAutoGenerating(true);
+    try {
+      // Step 1: Topic Optimize
+      setStep('TOPIC');
+      const topics = await optimizeMarketingTopic(currentTopic);
+      setOptimizedTopics(topics);
+      const firstTopic = topics[0];
+      setSelectedTopic(firstTopic.optimizedTopic);
+      setSelectedTarget(firstTopic.targetAudience);
+      
+      await new Promise(r => setTimeout(r, 2000));
+
+      // Step 2: Keyword Generation
+      setStep('KEYWORDS');
+      const kData = await generateGoldenKeywords(firstTopic.optimizedTopic, firstTopic.targetAudience);
+      setKeywordData(kData);
+      const top5Keywords = kData.top5Recommendations.map((k: any) => k.keyword);
+      setSelectedKeywords(top5Keywords);
+      
+      await new Promise(r => setTimeout(r, 2000));
+
+      // Step 3: Title Generation
+      setStep('TITLE');
+      const tData = await generateGoldenTitles(top5Keywords);
+      setTitles(tData);
+      const firstTitle = tData[0];
+      setSelectedTitle(firstTitle);
+      
+      await new Promise(r => setTimeout(r, 2000));
+
+      // Step 4: Full Post Generation
+      setLoading(true);
+      setLoadingStatus('전략적 블로그 포스팅을 작성 중입니다...');
+      
+      // Ensure the message is visible for at least 2 seconds
+      await new Promise(r => setTimeout(r, 2000));
+      
+      const post = await generateBlogPost(firstTitle, top5Keywords, style, firstTopic.targetAudience);
+      setFinalPost(post);
+      
+      setLoadingStatus('AI 이미지를 생성하여 본문에 삽입하는 중...');
+      setStep('GENERATION');
+      
+      // Generate images in background
+      const imagePromises = post.imagePrompts.map(async (prompt: string) => {
+        try {
+          return await generateBlogImage(prompt);
+        } catch (imgErr) {
+          console.error('Image generation failed:', imgErr);
+          return null;
+        }
+      });
+
+      const imgs = (await Promise.all(imagePromises)).filter((img): img is string => img !== null);
+      setFinalImages(imgs);
+    } catch (error: any) {
+      console.error(error);
+      alert('자동 생성 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+      setIsAutoGenerating(false);
     }
   };
 
@@ -494,13 +577,23 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
                   className="w-full pl-16 pr-8 py-6 rounded-[2rem] bg-slate-50 border border-slate-100 focus:border-primary focus:bg-white focus:ring-8 focus:ring-primary/5 outline-none font-bold text-slate-800 transition-all text-lg shadow-inner"
                 />
               </div>
-              <button 
-                onClick={handleTopicOptimize}
-                className="px-12 bg-primary text-white font-bold rounded-[2rem] hover:bg-primary-light transition-all shadow-2xl shadow-primary/30 active:scale-95 text-lg flex items-center justify-center gap-3"
-              >
-                <span>분석 시작</span>
-                <ArrowRight className="w-5 h-5" />
-              </button>
+              <div className="flex gap-4">
+                <button 
+                  onClick={handleTopicOptimize}
+                  className="px-12 bg-primary text-white font-bold rounded-[2rem] hover:bg-primary-light transition-all shadow-2xl shadow-primary/30 active:scale-95 text-lg flex items-center justify-center gap-3"
+                >
+                  <span>분석 시작</span>
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={handleAutoGenerate}
+                  disabled={loading || isAutoGenerating}
+                  className="px-12 bg-accent text-primary font-bold rounded-[2rem] hover:bg-yellow-500 transition-all shadow-2xl shadow-accent/30 active:scale-95 text-lg flex items-center justify-center gap-3"
+                >
+                  {(loading || isAutoGenerating) ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
+                  <span>랜덤 자동 생성</span>
+                </button>
+              </div>
             </div>
           </div>
 

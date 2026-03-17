@@ -183,4 +183,5 @@ export interface GoldenKeywordState {
   currentStep: number;
   savedDraft: boolean;
   finalConfirmed: boolean;
+  isAutoGenerating: boolean;
 }

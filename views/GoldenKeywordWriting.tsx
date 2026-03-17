@@ -70,11 +70,13 @@ const INITIAL_STATE: GoldenKeywordState = {
   currentStep: 1,
   savedDraft: false,
   finalConfirmed: false,
+  isAutoGenerating: false,
 };
 
 const GoldenKeywordWriting: React.FC = () => {
   const [state, setState] = useState<GoldenKeywordState>(INITIAL_STATE);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState('');
   const [recommendations, setRecommendations] = useState<any>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
@@ -148,8 +150,134 @@ const GoldenKeywordWriting: React.FC = () => {
     }
   };
 
+  const handleAutoGenerate = async () => {
+    let currentCategory = state.category;
+    if (!currentCategory) {
+      const defaultCategories = ['재테크', '건강', '육아', '여행', 'IT', '라이프스타일', '자기계발', '보험', '부동산'];
+      currentCategory = defaultCategories[Math.floor(Math.random() * defaultCategories.length)];
+      updateState({ category: currentCategory });
+    }
+
+    updateState({ isAutoGenerating: true });
+    setIsLoading(true);
+    try {
+      // Step 2: Topic Analysis
+      updateState({ currentStep: 2 });
+      const topics = await getGoldenTopicRecommendations(currentCategory, state.topic || '랜덤');
+      const topic = topics[0];
+      updateState({ topic });
+      
+      setIsLoading(false);
+      await new Promise(r => setTimeout(r, 2000));
+
+      // Step 3: Persona
+      setIsLoading(true);
+      updateState({ currentStep: 3 });
+      const personas = await getGoldenPersonaRecommendations(currentCategory, topic);
+      const persona = personas[0];
+      updateState({ persona });
+      
+      setIsLoading(false);
+      await new Promise(r => setTimeout(r, 2000));
+
+      // Step 4: Keywords
+      setIsLoading(true);
+      updateState({ currentStep: 4 });
+      const keywordResult = await getGoldenKeywordRecommendations(currentCategory, topic, persona);
+      const selectedKeywords = keywordResult.keywords.slice(0, 5).map(k => k.keyword);
+      const selectedLongtail = keywordResult.longtailKeywords.slice(0, 3);
+      updateState({ 
+        keywordRecommendations: keywordResult.keywords,
+        longtailKeywordRecommendations: keywordResult.longtailKeywords,
+        selectedKeywords,
+        selectedLongtailKeywords: selectedLongtail
+      });
+      
+      setIsLoading(false);
+      await new Promise(r => setTimeout(r, 2000));
+
+      // Step 5: Title
+      setIsLoading(true);
+      updateState({ currentStep: 5 });
+      const titles = await getGoldenTitleRecommendations([...selectedKeywords, ...selectedLongtail]);
+      const title = titles[0];
+      updateState({ selectedTitle: title, editedTitle: title });
+      
+      setIsLoading(false);
+      await new Promise(r => setTimeout(r, 2000));
+
+      // Step 6: Tone
+      setIsLoading(true);
+      updateState({ currentStep: 6 });
+      
+      setIsLoading(false);
+      await new Promise(r => setTimeout(r, 2000));
+
+      // Step 7: Generate Post
+      setIsLoading(true);
+      setLoadingStatus('전략적 블로그 포스팅을 작성 중입니다...');
+      
+      // Ensure the message is visible for at least 2 seconds
+      await new Promise(r => setTimeout(r, 2000));
+      
+      const result = await generateGoldenBlogPost({
+        category: currentCategory,
+        topic: topic,
+        persona: persona,
+        keywords: [...selectedKeywords, ...selectedLongtail],
+        title: title,
+        toneStyle: state.toneStyle
+      });
+
+      if (!result || !result.content) {
+        throw new Error("본문 생성에 실패했습니다. 다시 시도해주세요.");
+      }
+
+      updateState({
+        generatedPost: {
+          title: result.title,
+          content: result.content,
+          hashtags: result.hashtags
+        },
+        editedPost: {
+          title: result.title,
+          content: result.content
+        },
+        currentStep: 7
+      });
+
+      setLoadingStatus('AI 이미지를 생성하여 본문에 삽입하는 중...');
+
+      // Background image generation
+      try {
+        const images = await Promise.all(
+          result.imagePrompts.slice(0, 3).map((prompt: string) => 
+            generateBlogImage(prompt).catch(() => null)
+          )
+        );
+        const validImages = images.filter(img => img !== null) as string[];
+        updateState({ imageAssets: validImages });
+      } catch (imgErr) {
+        console.error("Batch image generation failed:", imgErr);
+      }
+
+    } catch (e: any) {
+      console.error("Auto Generate Error:", e);
+      alert(e.message || "자동 생성 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
+      setLoadingStatus('');
+      updateState({ isAutoGenerating: false });
+    }
+  };
+
   const handleGeneratePost = async () => {
     setIsLoading(true);
+    setLoadingStatus('전략적 블로그 포스팅을 작성 중입니다...');
+    
+    // Ensure the message is visible for at least 2 seconds
+    await new Promise(r => setTimeout(r, 2000));
+    
     try {
       const result = await generateGoldenBlogPost({
         category: state.category,
@@ -177,6 +305,8 @@ const GoldenKeywordWriting: React.FC = () => {
         currentStep: 7
       });
 
+      setLoadingStatus('AI 이미지를 생성하여 본문에 삽입하는 중...');
+
       // Generate images in background or after post is ready
       // We don't want to block the post display if images fail
       try {
@@ -199,6 +329,7 @@ const GoldenKeywordWriting: React.FC = () => {
       alert(e.message || "글 생성 중 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
+      setLoadingStatus('');
     }
   };
 
@@ -313,7 +444,7 @@ const GoldenKeywordWriting: React.FC = () => {
                 <Search className="w-4 h-4 text-accent" />
                 블로그 카테고리 입력
               </label>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <input 
                   type="text"
                   value={state.category}
@@ -321,14 +452,24 @@ const GoldenKeywordWriting: React.FC = () => {
                   placeholder="예: 재테크, 건강, 육아, 여행 등"
                   className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 focus:ring-2 focus:ring-accent outline-none transition-all"
                 />
-                <button 
-                  onClick={handleRecommend}
-                  disabled={!state.category || isLoading}
-                  className="px-8 py-4 bg-primary text-white font-bold rounded-2xl hover:bg-blue-900 disabled:opacity-50 transition-all flex items-center gap-2"
-                >
-                  {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                  추천받기
-                </button>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={handleRecommend}
+                    disabled={!state.category || isLoading}
+                    className="flex-1 sm:flex-none px-8 py-4 bg-primary text-white font-bold rounded-2xl hover:bg-blue-900 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    추천받기
+                  </button>
+                  <button 
+                    onClick={handleAutoGenerate}
+                    disabled={isLoading || state.isAutoGenerating}
+                    className="flex-1 sm:flex-none px-8 py-4 bg-accent text-primary font-bold rounded-2xl hover:bg-yellow-500 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-lg shadow-accent/20"
+                  >
+                    {(isLoading || state.isAutoGenerating) ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                    랜덤 자동 생성
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -360,7 +501,7 @@ const GoldenKeywordWriting: React.FC = () => {
                 <PenTool className="w-4 h-4 text-accent" />
                 블로그 주제 입력
               </label>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <input 
                   type="text"
                   value={state.topic}
@@ -368,14 +509,24 @@ const GoldenKeywordWriting: React.FC = () => {
                   placeholder="예: 사회초년생을 위한 청년도약계좌 가입 가이드 (또는 '랜덤' 입력)"
                   className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 focus:ring-2 focus:ring-accent outline-none transition-all"
                 />
-                <button 
-                  onClick={handleRecommend}
-                  disabled={!state.topic || isLoading}
-                  className="px-8 py-4 bg-primary text-white font-bold rounded-2xl hover:bg-blue-900 disabled:opacity-50 transition-all flex items-center gap-2"
-                >
-                  {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                  추천받기
-                </button>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={handleRecommend}
+                    disabled={!state.topic || isLoading}
+                    className="flex-1 sm:flex-none px-8 py-4 bg-primary text-white font-bold rounded-2xl hover:bg-blue-900 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    추천받기
+                  </button>
+                  <button 
+                    onClick={handleAutoGenerate}
+                    disabled={isLoading || state.isAutoGenerating}
+                    className="flex-1 sm:flex-none px-8 py-4 bg-accent text-primary font-bold rounded-2xl hover:bg-yellow-500 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-lg shadow-accent/20"
+                  >
+                    {(isLoading || state.isAutoGenerating) ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                    랜덤 자동 생성
+                  </button>
+                </div>
               </div>
               <p className="text-[10px] text-slate-400 italic px-2">
                 * '랜덤' 또는 'random' 입력 시 현재 트렌드에 맞는 주제를 추천합니다.
@@ -916,6 +1067,26 @@ const GoldenKeywordWriting: React.FC = () => {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* LOADING STATE */}
+      {isLoading && loadingStatus && (
+        <div className="fixed inset-0 bg-primary/60 backdrop-blur-md z-50 flex flex-col items-center justify-center">
+          <div className="bg-white p-16 rounded-[4rem] shadow-2xl flex flex-col items-center space-y-8 max-w-md text-center border border-slate-100 animate-fade-in">
+            <div className="relative">
+              <RefreshCw className="w-20 h-20 text-primary animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Sparkles className="w-8 h-8 text-accent" />
+              </div>
+            </div>
+            <div className="space-y-3">
+              <p className="text-2xl font-bold text-primary tracking-tight">{loadingStatus}</p>
+              <p className="text-sm text-slate-400 font-medium leading-relaxed italic">
+                "전문가의 신뢰감을 주는 문장과 <br/> 매력적인 시각 자료를 생성하고 있습니다."
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Navigation Buttons */}
       <div className="mt-12 flex items-center justify-between">
