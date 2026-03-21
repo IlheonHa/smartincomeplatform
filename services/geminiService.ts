@@ -151,11 +151,11 @@ export const optimizeMarketingTopic = async (userTopic: string) => {
       const data = await callOpenAI({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "당신은 20년 경력의 SEO 전문가이자 마케팅 컨설턴트입니다. 반드시 JSON 형식으로 응답하세요." },
+          { role: "system", content: "당신은 2026년 현재의 트렌드를 꿰뚫고 있는 20년 경력의 SEO 전문가이자 마케팅 컨설턴트입니다. 반드시 JSON 형식으로 응답하세요." },
           { role: "user", content: `사용자가 입력한 초기 주제: "${userTopic}". 
-          당신은 20년 경력의 SEO 전문가이자 마케팅 컨설턴트입니다. 
-          네이버, 구글, 유튜브의 최신 검색 트렌드와 사용자 의도(Search Intent)를 분석하여, 
+          현재 시점은 2026년입니다. 2026년의 최신 검색 트렌드와 사용자 의도(Search Intent)를 분석하여, 
           클릭률(CTR)과 체류 시간을 극대화할 수 있는 5가지 최적화 주제를 추천하세요.
+          '2026년'이라는 단어를 직접적으로 너무 자주 언급하기보다는, 현재가 2026년임을 전제로 한 최신 트렌드를 자연스럽게 반영해주세요.
           
           [분석 가이드라인]
           1. **검색 의도 분석**: 정보성, 상업성, 탐색성 의도를 구분하여 제안하세요.
@@ -190,9 +190,10 @@ export const optimizeMarketingTopic = async (userTopic: string) => {
 
   const response = await callGemini(ai, 'gemini-3-flash-preview', {
     contents: `사용자가 입력한 초기 주제: "${userTopic}". 
-    당신은 20년 경력의 SEO 전문가이자 마케팅 컨설턴트입니다. 
-    네이버, 구글, 유튜브의 최신 검색 트렌드와 사용자 의도(Search Intent)를 분석하여, 
+    현재 시점은 2026년입니다. 당신은 2026년의 트렌드를 완벽히 파악하고 있는 20년 경력의 SEO 전문가이자 마케팅 컨설턴트입니다. 
+    네이버, 구글, 유튜브의 2026년 최신 검색 트렌드와 사용자 의도(Search Intent)를 분석하여, 
     클릭률(CTR)과 체류 시간을 극대화할 수 있는 5가지 최적화 주제를 추천하세요.
+    '2026년'이라는 단어의 직접적인 반복은 피하되, 최신성을 충분히 반영한 자연스러운 서술을 사용하세요.
     
     [분석 가이드라인]
     1. **검색 의도 분석**: 정보성, 상업성, 탐색성 의도를 구분하여 제안하세요.
@@ -228,15 +229,15 @@ export const generateGoldenKeywords = async (topic: string, target: string) => {
       const data = await callOpenAI({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "당신은 천재 블로거이자 키워드 분석 전문가입니다. 반드시 JSON 형식으로 응답하세요." },
+          { role: "system", content: "당신은 2026년 현재의 시장 상황을 완벽히 이해하고 있는 천재 블로거이자 키워드 분석 전문가입니다. 반드시 JSON 형식으로 응답하세요." },
           { role: "user", content: `주제: "${topic}", 타겟: "${target}". 
-          당신은 데이터 기반의 키워드 분석 전문가입니다. 
-          검색량은 많지만 경쟁은 적은 '황금 키워드' 20개를 추출하세요.
+          현재 시점은 2026년입니다. 당신은 2026년의 데이터 기반 키워드 분석 전문가입니다. 
+          2026년 현재 검색량은 많지만 경쟁은 적은 '황금 키워드' 20개를 추출하세요.
           
           [키워드 선정 기준]
-          1. **LSI 키워드**: 주제와 연관된 의미적 키워드를 포함하여 SEO 점수를 높이세요.
+          1. **LSI 키워드**: 2026년의 언어 사용 트렌드와 주제와 연관된 의미적 키워드를 포함하여 SEO 점수를 높이세요.
           2. **구매 여정 단계**: 인지, 고려, 결정 단계별 키워드를 고르게 배치하세요.
-          3. **데이터 추정**: 검색량(Volume), 경쟁 정도(Competition), 수익성(Profitability)을 상/중/하로 평가하세요.
+          3. **데이터 추정**: 2026년 기준 검색량(Volume), 경쟁 정도(Competition), 수익성(Profitability)을 상/중/하로 평가하세요.
           
           결과는 반드시 다음 구조의 JSON 객체여야 합니다:
           {
@@ -267,9 +268,9 @@ export const generateGoldenKeywords = async (topic: string, target: string) => {
   if (!ai) throw new Error("Gemini API key is missing and OpenAI failed.");
 
   const response = await callGemini(ai, 'gemini-3-flash-preview', {
-    contents: `당신은 데이터 기반의 키워드 분석 전문가입니다. 주제: "${topic}", 타겟: "${target}". 
-    검색량은 많지만 경쟁은 적은 '황금 키워드' 20개를 추출하고 메타데이터를 포함하세요. 
-    LSI 키워드와 구매 여정 단계를 고려하세요.
+    contents: `현재 시점은 2026년입니다. 당신은 2026년의 데이터 기반 키워드 분석 전문가입니다. 주제: "${topic}", 타겟: "${target}". 
+    2026년 현재 검색량은 많지만 경쟁은 적은 '황금 키워드' 20개를 추출하고 메타데이터를 포함하세요. 
+    2026년의 LSI 키워드와 구매 여정 단계를 고려하세요.
     결과는 JSON 형식이어야 합니다.`,
     config: {
       responseMimeType: "application/json",
@@ -296,8 +297,8 @@ export const generateGoldenTitles = async (keywords: string[]) => {
       const data = await callOpenAI({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "당신은 SEO 제목 최적화 전문가입니다. 반드시 JSON 형식으로 응답하세요." },
-          { role: "user", content: `키워드: [${keywords.join(", ")}]. SEO 최적화 황금 제목 5개를 생성하세요. 결과는 반드시 {"titles": ["제목1", "제목2", ...]} 형식의 JSON 객체여야 합니다.` }
+          { role: "system", content: "당신은 2026년의 트렌드를 반영한 SEO 제목 최적화 전문가입니다. 반드시 JSON 형식으로 응답하세요." },
+          { role: "user", content: `현재 시점은 2026년입니다. 키워드: [${keywords.join(", ")}]. 2026년의 최신 감각을 반영한 SEO 최적화 황금 제목 5개를 생성하세요. 결과는 반드시 {"titles": ["제목1", "제목2", ...]} 형식의 JSON 객체여야 합니다.` }
         ],
         response_format: { type: "json_object" }
       });
@@ -319,7 +320,7 @@ export const generateGoldenTitles = async (keywords: string[]) => {
   if (!ai) throw new Error("Gemini API key is missing and OpenAI failed.");
 
   const response = await callGemini(ai, 'gemini-3-flash-preview', {
-    contents: `키워드: [${keywords.join(", ")}]. SEO 최적화 황금 제목 5개를 생성하세요.`,
+    contents: `현재 시점은 2026년입니다. 키워드: [${keywords.join(", ")}]. 2026년의 최신 트렌드를 반영한 SEO 최적화 황금 제목 5개를 생성하세요.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: { type: Type.ARRAY, items: { type: Type.STRING } }
@@ -337,30 +338,30 @@ export const generateBlogPost = async (title: string, keywords: string[], style:
       const data = await callOpenAI({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "당신은 천재 블로거이자 보험 마케팅 전문가입니다. 반드시 JSON 형식으로 응답하세요." },
-          { role: "user", content: `제목: "${title}"
+          { role: "system", content: "당신은 2026년 현재 가장 영향력 있는 천재 블로거이자 보험 마케팅 전문가입니다. 반드시 JSON 형식으로 응답하세요." },
+          { role: "user", content: `현재 시점은 2026년입니다.
+          제목: "${title}"
           사용 키워드: [${keywords.join(", ")}]
           말투 스타일: "${style}"
           타겟 독자: "${target}"
           
           [SEO 및 품질 최적화 규칙]
-          1. **전문성 및 신뢰성(E-E-A-T)**: 해당 분야의 20년 경력 전문가가 작성한 것처럼 깊이 있는 통찰력과 구체적인 사례를 포함하세요.
-          2. **SEO 구조**: 
+          1. **전문성 및 신뢰성(E-E-A-T)**: 2026년 현재 해당 분야의 20년 경력 전문가가 작성한 것처럼 깊이 있는 통찰력과 구체적인 사례를 포함하세요.
+          2. **최신성 유지**: 2026년의 최신 트렌드와 정보를 반영하되, '2026년'이라는 단어의 직접적인 반복은 피하고 자연스럽게 현재가 2026년임을 알 수 있도록 서술하세요.
+          3. **SEO 구조**: 
              - 서론: 독자의 문제점을 공감하고 해결책을 제시하는 강력한 훅(Hook)으로 시작하세요.
              - 본론: 정보성 가치가 높은 내용을 3개 이상의 소제목(##)으로 나누어 상세히 설명하세요.
              - 결론: 핵심 내용을 요약하고 독자의 행동을 유도하는 강력한 CTA(Call to Action)를 포함하세요.
-          3. **키워드 배치**: 선택된 키워드들을 서론, 소제목, 본문 내용에 자연스럽게 녹여내어 검색 엔진 최적화를 극대화하세요.
-          4. **가독성 최적화**: 
+          4. **키워드 배치**: 선택된 키워드들을 서론, 소제목, 본문 내용에 자연스럽게 녹여내어 검색 엔진 최적화를 극대화하세요.
+          5. **가독성 최적화**: 
+             - 중요한 키워드나 문구는 **강조** 기호를 사용하여 강조하세요.
              - 한 문장은 짧고 명확하게 작성하세요.
              - 복잡한 정보는 불렛 포인트나 번호 매기기를 활용하여 시각적으로 정리하세요.
              - 한 문단은 3줄을 넘지 않도록 구성하세요.
-          5. **금지 사항**: 
-             - **와 같은 마크다운 강조 기호(볼드체 기호)를 절대 사용하지 마세요.**
-             - HTML 태그를 절대 사용하지 마세요. 순수 마크다운(##, ### 등)만 사용하세요.
-          6. **이미지 전략**: [IMAGE_PLACEHOLDER_1], [IMAGE_PLACEHOLDER_2], [IMAGE_PLACEHOLDER_3]를 서론 하단, 본론 중간, 결론 상단에 배치하세요.
-          7. **이미지 프롬프트(imagePrompts)**: 각 섹션의 감성적/정보적 가치를 극대화할 수 있는 고품질 이미지 묘사를 영문으로 작성하세요. 
+          6. **해시태그**: 2026년의 검색 트렌드를 반영한 최적의 해시태그를 반드시 20개 이상 생성하세요.
+          7. **이미지 전략**: [IMAGE_PLACEHOLDER_1], [IMAGE_PLACEHOLDER_2], [IMAGE_PLACEHOLDER_3]를 서론 하단, 본론 중간, 결론 상단에 배치하세요.
+          8. **이미지 프롬프트(imagePrompts)**: 2026년의 감각에 맞는 고품질 이미지 묘사를 영문으로 작성하세요. 
              - "High-end professional photography", "Cinematic lighting", "Minimalist aesthetic" 등의 표현을 활용하세요.
-             - 한국인 타겟인 경우 "Modern Korean lifestyle", "Professional Korean consultant" 등을 명시하세요.
           
           결과는 반드시 {"finalTitle": "...", "metaDescription": "...", "content": "...", "hashtags": [...], "imagePrompts": [...]} 형식의 JSON 객체여야 합니다.` }
         ],
@@ -385,19 +386,21 @@ export const generateBlogPost = async (title: string, keywords: string[], style:
   if (!ai) throw new Error("Gemini API key is missing and OpenAI failed.");
 
   const response = await callGemini(ai, 'gemini-3-flash-preview', {
-    contents: `제목: "${title}"
+    contents: `현재 시점은 2026년입니다.
+    제목: "${title}"
     사용 키워드: [${keywords.join(", ")}]
     말투 스타일: "${style}"
     타겟 독자: "${target}"
     
     [SEO 및 품질 최적화 규칙]
-    1. **전문성 및 신뢰성(E-E-A-T)**: 해당 분야의 전문가가 작성한 것처럼 깊이 있는 통찰력을 포함하세요.
-    2. **SEO 구조**: 서론(훅), 본론(3개 이상의 소제목), 결론(CTA) 구조를 엄격히 지키세요.
-    3. **키워드 배치**: 키워드들을 자연스럽게 문맥에 녹여내세요.
-    4. **가독성**: 문장은 짧게, 문단은 3줄 이내로, 불렛 포인트를 적극 활용하세요.
-    5. **강조 기호 금지**: ** 기호를 절대 사용하지 마세요.
-    6. **이미지 전략**: [IMAGE_PLACEHOLDER_1, 2, 3]을 적절한 위치에 배치하세요.
-    7. **이미지 프롬프트**: "High-end professional photography", "Modern Korean lifestyle" 스타일의 영문 프롬프트를 생성하세요.`,
+    1. **전문성 및 신뢰성(E-E-A-T)**: 2026년 현재의 전문가가 작성한 것처럼 깊이 있는 통찰력을 포함하세요.
+    2. **최신성**: 2026년의 최신 트렌드를 반영하되, '2026년' 단어의 과도한 반복은 피하고 자연스럽게 서술하세요.
+    3. **SEO 구조**: 서론(훅), 본론(3개 이상의 소제목), 결론(CTA) 구조를 엄격히 지키세요.
+    4. **키워드 배치**: 키워드들을 자연스럽게 문맥에 녹여내세요.
+    5. **가독성**: 중요한 문구는 **강조** 기호를 사용하고, 문장은 짧게, 문단은 3줄 이내로, 불렛 포인트를 적극 활용하세요.
+    6. **해시태그**: 2026년 트렌드에 맞는 해시태그를 반드시 20개 이상 생성하세요.
+    7. **이미지 전략**: [IMAGE_PLACEHOLDER_1, 2, 3]을 적절한 위치에 배치하세요.
+    8. **이미지 프롬프트**: 2026년 감각의 "High-end professional photography", "Modern Korean lifestyle" 스타일 영문 프롬프트를 생성하세요.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: {

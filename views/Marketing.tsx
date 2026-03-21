@@ -218,20 +218,25 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
     }
 
     setIsAutoGenerating(true);
+    setLoading(true);
+    
     try {
       // Step 1: Topic Optimize
+      setLoadingStatus('SEO 전문가가 주제를 정밀 분석하고 있습니다...');
       setStep('TOPIC');
       const topics = await optimizeMarketingTopic(currentTopic);
       setOptimizedTopics(topics);
-      const firstTopic = topics[0];
-      setSelectedTopic(firstTopic.optimizedTopic);
-      setSelectedTarget(firstTopic.targetAudience);
+      // Randomly select one from the optimized topics
+      const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+      setSelectedTopic(randomTopic.optimizedTopic);
+      setSelectedTarget(randomTopic.targetAudience);
       
       await new Promise(r => setTimeout(r, 2000));
 
       // Step 2: Keyword Generation
+      setLoadingStatus('검색량과 경쟁 강도를 분석하여 황금 키워드를 발굴 중입니다...');
       setStep('KEYWORDS');
-      const kData = await generateGoldenKeywords(firstTopic.optimizedTopic, firstTopic.targetAudience);
+      const kData = await generateGoldenKeywords(randomTopic.optimizedTopic, randomTopic.targetAudience);
       setKeywordData(kData);
       const top5Keywords = kData.top5Recommendations.map((k: any) => k.keyword);
       setSelectedKeywords(top5Keywords);
@@ -239,28 +244,26 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
       await new Promise(r => setTimeout(r, 2000));
 
       // Step 3: Title Generation
+      setLoadingStatus('클릭률(CTR)을 극대화할 최적의 제목을 설계하고 있습니다...');
       setStep('TITLE');
       const tData = await generateGoldenTitles(top5Keywords);
       setTitles(tData);
-      const firstTitle = tData[0];
-      setSelectedTitle(firstTitle);
+      // Randomly select one from the generated titles
+      const randomTitle = tData[Math.floor(Math.random() * tData.length)];
+      setSelectedTitle(randomTitle);
       
       await new Promise(r => setTimeout(r, 2000));
 
       // Step 4: Full Post Generation
-      setLoading(true);
-      setLoadingStatus('전략적 블로그 포스팅을 작성 중입니다...');
+      setLoadingStatus('전략적 블로그 포스팅 원고를 작성 중입니다...');
       
-      // Ensure the message is visible for at least 2 seconds
-      await new Promise(r => setTimeout(r, 2000));
-      
-      const post = await generateBlogPost(firstTitle, top5Keywords, style, firstTopic.targetAudience);
+      const post = await generateBlogPost(randomTitle, top5Keywords, style, randomTopic.targetAudience);
       setFinalPost(post);
       
-      setLoadingStatus('AI 이미지를 생성하여 본문에 삽입하는 중...');
+      setLoadingStatus('AI 이미지를 생성하여 본문에 삽입하는 중입니다...');
       setStep('GENERATION');
       
-      // Generate images in background
+      // Generate images
       const imagePromises = post.imagePrompts.map(async (prompt: string) => {
         try {
           return await generateBlogImage(prompt);
@@ -278,6 +281,7 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
     } finally {
       setLoading(false);
       setIsAutoGenerating(false);
+      setLoadingStatus('');
     }
   };
 
@@ -290,33 +294,38 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
     
     const lines = cleanText.split('\n');
     return lines.map((line, idx) => {
+      const trimmedLine = line.trim();
+      
+      // 빈 줄 처리
+      if (!trimmedLine) {
+        return <div key={idx} className="h-4" />;
+      }
+
       // 1. 소제목 처리 (##)
-      if (line.trim().startsWith('##')) {
+      if (trimmedLine.startsWith('##')) {
         return (
           <h3 key={idx} className="text-3xl font-bold text-primary mt-16 mb-8 border-l-8 border-primary pl-8 animate-fade-in tracking-tight">
-            {line.replace(/#/g, '').trim()}
+            {trimmedLine.replace(/#/g, '').trim()}
           </h3>
         );
       }
       
       // 2. 보조 소제목 처리 (###)
-      if (line.trim().startsWith('###')) {
+      if (trimmedLine.startsWith('###')) {
         return (
           <h4 key={idx} className="text-xl font-bold text-gray-800 mt-10 mb-4 pl-2 border-b-2 border-gray-100 pb-2">
-            {line.replace(/#/g, '').trim()}
+            {trimmedLine.replace(/#/g, '').trim()}
           </h4>
         );
       }
 
       // 3. 볼드 기호(**) 제거 및 스타일 적용
-      // Regex explained: **문구** 패턴을 찾아서 캡처 그룹으로 나눔
       const boldRegex = /\*\*(.*?)\*\*/g;
       const parts = line.split(boldRegex);
       const renderedLine = parts.map((part, i) => {
         if (i % 2 === 1) {
-          // 홀수 번째 요소는 ** 사이에 있던 강조 문구임
           return (
-            <strong key={i} className="text-primary font-bold px-1 bg-primary/5 rounded-md ring-1 ring-primary/10 mx-0.5">
+            <strong key={i} className="text-primary font-bold px-1.5 py-0.5 bg-primary/5 rounded-md ring-1 ring-primary/10 mx-0.5 shadow-sm">
               {part}
             </strong>
           );
@@ -326,7 +335,7 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
 
       // 4. 일반 문단 (줄바꿈 반영)
       return (
-        <p key={idx} className="text-gray-700 leading-relaxed mb-6 text-[17px] font-medium tracking-normal">
+        <p key={idx} className="text-gray-700 leading-[1.8] mb-6 text-[17px] font-medium tracking-normal">
           {renderedLine}
         </p>
       );
@@ -336,11 +345,13 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
   const handleCopyPost = () => {
     if (!finalPost) return;
     // 클립보드 복사 시 마크다운 기호(#)를 모두 제거하여 순수 텍스트만 복사
+    // 볼드 기호(**)는 제거하거나 가독성을 위해 남겨둘 수 있음. 여기서는 제거함.
     const cleanContent = finalPost.content
       .replace(/## /g, '\n[제목] ')
-      .replace(/### /g, '\n[부제목] ');
+      .replace(/### /g, '\n[부제목] ')
+      .replace(/\*\*(.*?)\*\*/g, '$1');
     
-    const fullText = `${selectedTitle}\n\n${cleanContent}\n\n${finalPost.hashtags.join(' ')}`;
+    const fullText = `${selectedTitle}\n\n${cleanContent}\n\n${finalPost.hashtags.map((h: string) => h.startsWith('#') ? h : '#' + h).join(' ')}`;
     navigator.clipboard.writeText(fullText);
     alert('순수 텍스트 원고가 복사되었습니다.');
   };
@@ -351,25 +362,31 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
     let htmlContent = `<h1>${selectedTitle}</h1>\n`;
     const lines = finalPost.content.split('\n');
     lines.forEach((line: string) => {
-      if (line.trim().startsWith('##')) {
-        htmlContent += `<h2>${line.replace(/#/g, '').trim()}</h2>\n`;
-      } else if (line.trim().startsWith('###')) {
-        htmlContent += `<h3>${line.replace(/#/g, '').trim()}</h3>\n`;
-      } else if (line.trim()) {
-        htmlContent += `<p>${line.trim()}</p>\n`;
+      let processedLine = line.trim();
+      if (processedLine.startsWith('##')) {
+        htmlContent += `<h2>${processedLine.replace(/#/g, '').trim()}</h2>\n`;
+      } else if (processedLine.startsWith('###')) {
+        htmlContent += `<h3>${processedLine.replace(/#/g, '').trim()}</h3>\n`;
+      } else if (processedLine) {
+        // Handle bold in rich text
+        const boldProcessed = processedLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        htmlContent += `<p>${boldProcessed}</p>\n`;
       }
     });
-    htmlContent += `<p>${finalPost.hashtags.join(' ')}</p>`;
+    htmlContent += `<p>${finalPost.hashtags.map((h: string) => h.startsWith('#') ? h : '#' + h).join(' ')}</p>`;
 
     try {
       const blob = new Blob([htmlContent], { type: 'text/html' });
-      const data = [new ClipboardItem({ 'text/html': blob, 'text/plain': new Blob([htmlContent.replace(/<[^>]*>/g, '')], { type: 'text/plain' }) })];
+      const plainText = htmlContent.replace(/<[^>]*>/g, '');
+      const data = [new ClipboardItem({ 
+        'text/html': blob, 
+        'text/plain': new Blob([plainText], { type: 'text/plain' }) 
+      })];
       
       navigator.clipboard.write(data).then(() => {
         alert('서식이 포함된 원고가 복사되었습니다. 블로그 편집기에 붙여넣으세요.');
       }).catch(err => {
         console.error('Failed to copy rich text:', err);
-        // Fallback to HTML copy if rich text fails
         handleCopyHTML();
       });
     } catch (e) {
@@ -384,12 +401,14 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
     htmlContent += `<h1>${selectedTitle}</h1>\n`;
     const lines = finalPost.content.split('\n');
     lines.forEach((line: string) => {
-      if (line.trim().startsWith('##')) {
-        htmlContent += `<h2>${line.replace(/#/g, '').trim()}</h2>\n`;
-      } else if (line.trim().startsWith('###')) {
-        htmlContent += `<h3>${line.replace(/#/g, '').trim()}</h3>\n`;
-      } else if (line.trim()) {
-        htmlContent += `<p>${line.trim()}</p>\n`;
+      let processedLine = line.trim();
+      if (processedLine.startsWith('##')) {
+        htmlContent += `<h2>${processedLine.replace(/#/g, '').trim()}</h2>\n`;
+      } else if (processedLine.startsWith('###')) {
+        htmlContent += `<h3>${processedLine.replace(/#/g, '').trim()}</h3>\n`;
+      } else if (processedLine) {
+        const boldProcessed = processedLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        htmlContent += `<p>${boldProcessed}</p>\n`;
       }
     });
     htmlContent += `<p>${finalPost.hashtags.map((h: string) => h.startsWith('#') ? h : '#' + h).join(' ')}</p>`;
@@ -566,7 +585,7 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
                 </span>
               </div>
             </div>
-            <div className="flex flex-col md:flex-row gap-6">
+            <div className="flex flex-col lg:flex-row gap-6">
               <div className="flex-1 relative">
                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300" />
                 <input 
@@ -577,10 +596,10 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
                   className="w-full pl-16 pr-8 py-6 rounded-[2rem] bg-slate-50 border border-slate-100 focus:border-primary focus:bg-white focus:ring-8 focus:ring-primary/5 outline-none font-bold text-slate-800 transition-all text-lg shadow-inner"
                 />
               </div>
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <button 
                   onClick={handleTopicOptimize}
-                  className="px-12 bg-primary text-white font-bold rounded-[2rem] hover:bg-primary-light transition-all shadow-2xl shadow-primary/30 active:scale-95 text-lg flex items-center justify-center gap-3"
+                  className="px-8 sm:px-12 py-4 sm:py-0 bg-primary text-white font-bold rounded-[2rem] hover:bg-primary-light transition-all shadow-2xl shadow-primary/30 active:scale-95 text-lg flex items-center justify-center gap-3 whitespace-nowrap"
                 >
                   <span>분석 시작</span>
                   <ArrowRight className="w-5 h-5" />
@@ -588,7 +607,7 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
                 <button 
                   onClick={handleAutoGenerate}
                   disabled={loading || isAutoGenerating}
-                  className="px-12 bg-accent text-primary font-bold rounded-[2rem] hover:bg-yellow-500 transition-all shadow-2xl shadow-accent/30 active:scale-95 text-lg flex items-center justify-center gap-3"
+                  className="px-8 sm:px-12 py-4 sm:py-0 bg-accent text-primary font-bold rounded-[2rem] hover:bg-yellow-500 transition-all shadow-2xl shadow-accent/30 active:scale-95 text-lg flex items-center justify-center gap-3 whitespace-nowrap"
                 >
                   {(loading || isAutoGenerating) ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
                   <span>랜덤 자동 생성</span>

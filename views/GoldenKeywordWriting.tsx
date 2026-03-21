@@ -162,9 +162,10 @@ const GoldenKeywordWriting: React.FC = () => {
     setIsLoading(true);
     try {
       // Step 2: Topic Analysis
+      setLoadingStatus('블로그 카테고리를 분석하고 있습니다...');
       updateState({ currentStep: 2 });
       const topics = await getGoldenTopicRecommendations(currentCategory, state.topic || '랜덤');
-      const topic = topics[0];
+      const topic = topics[Math.floor(Math.random() * topics.length)];
       updateState({ topic });
       
       setIsLoading(false);
@@ -172,9 +173,10 @@ const GoldenKeywordWriting: React.FC = () => {
 
       // Step 3: Persona
       setIsLoading(true);
+      setLoadingStatus('트렌드에 맞는 최적의 주제를 선정 중입니다...');
       updateState({ currentStep: 3 });
       const personas = await getGoldenPersonaRecommendations(currentCategory, topic);
-      const persona = personas[0];
+      const persona = personas[Math.floor(Math.random() * personas.length)];
       updateState({ persona });
       
       setIsLoading(false);
@@ -182,6 +184,7 @@ const GoldenKeywordWriting: React.FC = () => {
 
       // Step 4: Keywords
       setIsLoading(true);
+      setLoadingStatus('검색 유입을 극대화할 황금 키워드를 발굴 중입니다...');
       updateState({ currentStep: 4 });
       const keywordResult = await getGoldenKeywordRecommendations(currentCategory, topic, persona);
       const selectedKeywords = keywordResult.keywords.slice(0, 5).map(k => k.keyword);
@@ -198,9 +201,10 @@ const GoldenKeywordWriting: React.FC = () => {
 
       // Step 5: Title
       setIsLoading(true);
+      setLoadingStatus('클릭률(CTR)이 높은 매력적인 제목을 생성하고 있습니다...');
       updateState({ currentStep: 5 });
       const titles = await getGoldenTitleRecommendations([...selectedKeywords, ...selectedLongtail]);
-      const title = titles[0];
+      const title = titles[Math.floor(Math.random() * titles.length)];
       updateState({ selectedTitle: title, editedTitle: title });
       
       setIsLoading(false);
@@ -215,7 +219,8 @@ const GoldenKeywordWriting: React.FC = () => {
 
       // Step 7: Generate Post
       setIsLoading(true);
-      setLoadingStatus('전략적 블로그 포스팅을 작성 중입니다...');
+      setLoadingStatus('전략적 블로그 포스팅 원고를 작성 중입니다...');
+      updateState({ currentStep: 7 });
       
       // Ensure the message is visible for at least 2 seconds
       await new Promise(r => setTimeout(r, 2000));
@@ -246,7 +251,7 @@ const GoldenKeywordWriting: React.FC = () => {
         currentStep: 7
       });
 
-      setLoadingStatus('AI 이미지를 생성하여 본문에 삽입하는 중...');
+      setLoadingStatus('AI 이미지를 생성하여 본문에 삽입하는 중입니다...');
 
       // Background image generation
       try {
@@ -365,21 +370,29 @@ const GoldenKeywordWriting: React.FC = () => {
     let htmlContent = `<h1>${state.editedPost.title}</h1>\n`;
     const lines = state.editedPost.content.split('\n');
     lines.forEach((line: string) => {
-      if (line.trim().startsWith('##')) {
-        htmlContent += `<h2>${line.replace(/#/g, '').trim()}</h2>\n`;
-      } else if (line.trim().startsWith('###')) {
-        htmlContent += `<h3>${line.replace(/#/g, '').trim()}</h3>\n`;
-      } else if (line.trim()) {
-        htmlContent += `<p>${line.trim()}</p>\n`;
+      let processedLine = line.trim();
+      if (processedLine.startsWith('##')) {
+        htmlContent += `<h2>${processedLine.replace(/#/g, '').trim()}</h2>\n`;
+      } else if (processedLine.startsWith('###')) {
+        htmlContent += `<h3>${processedLine.replace(/#/g, '').trim()}</h3>\n`;
+      } else if (processedLine) {
+        // Handle bold in rich text
+        const boldProcessed = processedLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        htmlContent += `<p>${boldProcessed}</p>\n`;
       }
     });
     if (state.generatedPost?.hashtags) {
-      htmlContent += `<p>${state.generatedPost.hashtags.join(' ')}</p>`;
+      const hashtags = state.generatedPost.hashtags.map((h: string) => h.startsWith('#') ? h : '#' + h).join(' ');
+      htmlContent += `<p>${hashtags}</p>`;
     }
 
     try {
       const blob = new Blob([htmlContent], { type: 'text/html' });
-      const data = [new ClipboardItem({ 'text/html': blob, 'text/plain': new Blob([htmlContent.replace(/<[^>]*>/g, '')], { type: 'text/plain' }) })];
+      const plainText = htmlContent.replace(/<[^>]*>/g, '');
+      const data = [new ClipboardItem({ 
+        'text/html': blob, 
+        'text/plain': new Blob([plainText], { type: 'text/plain' }) 
+      })];
       
       navigator.clipboard.write(data).then(() => {
         alert('서식이 포함된 원고가 복사되었습니다. 블로그 편집기에 붙여넣으세요.');
@@ -390,7 +403,12 @@ const GoldenKeywordWriting: React.FC = () => {
     } catch (e) {
       console.error('ClipboardItem not supported:', e);
       // Fallback to plain text copy or HTML
-      const html = `<h1>${state.editedPost.title}</h1>\n${state.editedPost.content.split('\n').map(p => p.trim() ? `<p>${p}</p>` : '<br/>').join('')}`;
+      const html = `<h1>${state.editedPost.title}</h1>\n${state.editedPost.content.split('\n').map(p => {
+        const processed = p.trim();
+        if (!processed) return '<br/>';
+        const boldProcessed = processed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        return `<p>${boldProcessed}</p>`;
+      }).join('')}`;
       copyToClipboard(html, 'HTML 코드가');
     }
   };
@@ -891,7 +909,10 @@ const GoldenKeywordWriting: React.FC = () => {
 
                     <div className="space-y-3">
                       <button 
-                        onClick={() => copyToClipboard(state.editedPost?.content || '', '본문 텍스트가')}
+                        onClick={() => {
+                          const plainText = (state.editedPost?.content || '').replace(/\*\*/g, '');
+                          copyToClipboard(plainText, '본문 텍스트가');
+                        }}
                         className="w-full flex items-center justify-between p-5 bg-white/10 hover:bg-white/20 rounded-2xl transition-all group"
                       >
                         <div className="flex items-center gap-3">
