@@ -156,7 +156,7 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
     await new Promise(r => setTimeout(r, 2000));
     
     try {
-      const post = await generateBlogPost(selectedTitle, selectedKeywords, style, selectedTarget);
+      const post = await generateBlogPost(selectedTitle, selectedKeywords, style, selectedTarget, selectedTopic);
       setFinalPost(post);
       
       setLoadingStatus('AI 이미지를 생성하여 본문에 삽입하는 중...');
@@ -257,7 +257,7 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
       // Step 4: Full Post Generation
       setLoadingStatus('전략적 블로그 포스팅 원고를 작성 중입니다...');
       
-      const post = await generateBlogPost(randomTitle, top5Keywords, style, randomTopic.targetAudience);
+      const post = await generateBlogPost(randomTitle, top5Keywords, style, randomTopic.targetAudience, randomTopic.optimizedTopic);
       setFinalPost(post);
       
       setLoadingStatus('AI 이미지를 생성하여 본문에 삽입하는 중입니다...');
@@ -304,7 +304,7 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
       // 1. 소제목 처리 (##)
       if (trimmedLine.startsWith('##')) {
         return (
-          <h3 key={idx} className="text-3xl font-bold text-primary mt-16 mb-8 border-l-8 border-primary pl-8 animate-fade-in tracking-tight">
+          <h3 key={idx} className="text-2xl font-extrabold text-primary mt-12 mb-6 bg-primary/5 p-4 rounded-xl border-l-4 border-primary animate-fade-in tracking-tight">
             {trimmedLine.replace(/#/g, '').trim()}
           </h3>
         );
@@ -313,7 +313,7 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
       // 2. 보조 소제목 처리 (###)
       if (trimmedLine.startsWith('###')) {
         return (
-          <h4 key={idx} className="text-xl font-bold text-gray-800 mt-10 mb-4 pl-2 border-b-2 border-gray-100 pb-2">
+          <h4 key={idx} className="text-xl font-bold text-gray-800 mt-8 mb-4 pl-3 border-l-2 border-slate-200">
             {trimmedLine.replace(/#/g, '').trim()}
           </h4>
         );
@@ -321,23 +321,32 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
 
       // 3. 볼드 기호(**) 제거 및 스타일 적용
       const boldRegex = /\*\*(.*?)\*\*/g;
-      const parts = line.split(boldRegex);
-      const renderedLine = parts.map((part, i) => {
-        if (i % 2 === 1) {
-          return (
-            <strong key={i} className="text-primary font-bold px-1.5 py-0.5 bg-primary/5 rounded-md ring-1 ring-primary/10 mx-0.5 shadow-sm">
-              {part}
-            </strong>
-          );
-        }
-        return part;
-      });
+      
+      // 문장 단위로 분리하여 줄바꿈 적용 (가독성 개선)
+      // . ! ? 뒤에 공백이 오는 경우를 문장의 끝으로 간주
+      const sentences = trimmedLine.split(/(?<=[.!?])\s+/);
 
-      // 4. 일반 문단 (줄바꿈 반영)
       return (
-        <p key={idx} className="text-gray-700 leading-[1.8] mb-6 text-[17px] font-medium tracking-normal">
-          {renderedLine}
-        </p>
+        <div key={idx} className="mb-6">
+          {sentences.map((sentence, sIdx) => {
+            const parts = sentence.split(boldRegex);
+            return (
+              <p key={sIdx} className="text-gray-700 leading-relaxed mb-2 text-[15px] font-normal tracking-normal">
+                {parts.map((part, i) => {
+                  if (i % 2 === 1) {
+                    return (
+                      <strong key={i} className="text-primary font-bold">
+                        {part}
+                      </strong>
+                    );
+                  }
+                  // 남은 별표 기호 제거
+                  return part.replace(/\*/g, '');
+                })}
+              </p>
+            );
+          })}
+        </div>
       );
     });
   };
@@ -345,13 +354,13 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
   const handleCopyPost = () => {
     if (!finalPost) return;
     // 클립보드 복사 시 마크다운 기호(#)를 모두 제거하여 순수 텍스트만 복사
-    // 볼드 기호(**)는 제거하거나 가독성을 위해 남겨둘 수 있음. 여기서는 제거함.
     const cleanContent = finalPost.content
       .replace(/## /g, '\n[제목] ')
       .replace(/### /g, '\n[부제목] ')
       .replace(/\*\*(.*?)\*\*/g, '$1');
     
-    const fullText = `${selectedTitle}\n\n${cleanContent}\n\n${finalPost.hashtags.map((h: string) => h.startsWith('#') ? h : '#' + h).join(' ')}`;
+    const hashtags = finalPost.hashtags.map((h: string) => h.startsWith('#') ? h : '#' + h).join(' ');
+    const fullText = `${selectedTitle}\n\n${cleanContent}\n\n${hashtags}`;
     navigator.clipboard.writeText(fullText);
     alert('순수 텍스트 원고가 복사되었습니다.');
   };
@@ -359,21 +368,29 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
   const handleCopyRichText = () => {
     if (!finalPost) return;
     
-    let htmlContent = `<h1>${selectedTitle}</h1>\n`;
+    let htmlContent = `<div style="font-family: sans-serif; line-height: 1.6; color: #333;">`;
+    htmlContent += `<h1 style="color: #002d62; font-size: 28px; border-bottom: 2px solid #002d62; padding-bottom: 10px;">${selectedTitle}</h1>\n`;
+    
     const lines = finalPost.content.split('\n');
     lines.forEach((line: string) => {
       let processedLine = line.trim();
       if (processedLine.startsWith('##')) {
-        htmlContent += `<h2>${processedLine.replace(/#/g, '').trim()}</h2>\n`;
+        htmlContent += `<h2 style="color: #002d62; font-size: 22px; background-color: #f0f4f8; padding: 10px; border-left: 5px solid #002d62; margin-top: 30px;">${processedLine.replace(/#/g, '').trim()}</h2>\n`;
       } else if (processedLine.startsWith('###')) {
-        htmlContent += `<h3>${processedLine.replace(/#/g, '').trim()}</h3>\n`;
+        htmlContent += `<h3 style="color: #333; font-size: 18px; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 20px;">${processedLine.replace(/#/g, '').trim()}</h3>\n`;
       } else if (processedLine) {
-        // Handle bold in rich text
-        const boldProcessed = processedLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        htmlContent += `<p>${boldProcessed}</p>\n`;
+        // 문장 단위로 분리하여 줄바꿈 적용
+        const sentences = processedLine.split(/(?<=[.!?])\s+/);
+        sentences.forEach((sentence: string) => {
+          const boldProcessed = sentence.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #002d62;">$1</strong>').replace(/\*/g, '');
+          htmlContent += `<p style="margin-bottom: 10px; font-size: 15px;">${boldProcessed}</p>\n`;
+        });
       }
     });
-    htmlContent += `<p>${finalPost.hashtags.map((h: string) => h.startsWith('#') ? h : '#' + h).join(' ')}</p>`;
+    
+    const hashtags = finalPost.hashtags.map((h: string) => h.startsWith('#') ? h : '#' + h).join(' ');
+    htmlContent += `<p style="margin-top: 30px; color: #002d62; font-weight: bold;">${hashtags}</p>`;
+    htmlContent += `</div>`;
 
     try {
       const blob = new Blob([htmlContent], { type: 'text/html' });
@@ -411,7 +428,8 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
         htmlContent += `<p>${boldProcessed}</p>\n`;
       }
     });
-    htmlContent += `<p>${finalPost.hashtags.map((h: string) => h.startsWith('#') ? h : '#' + h).join(' ')}</p>`;
+    const hashtags = finalPost.hashtags.map((h: string) => h.startsWith('#') ? h : '#' + h).join(' ');
+    htmlContent += `<p>${hashtags}</p>`;
     navigator.clipboard.writeText(htmlContent);
     alert('HTML 코드가 복사되었습니다.');
   };

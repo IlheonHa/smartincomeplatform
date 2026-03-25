@@ -93,7 +93,8 @@ const AIHub: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void }> =
       // 1. 소제목 처리 (##)
       if (trimmedLine.startsWith('##')) {
         return (
-          <h3 key={idx} className="text-3xl font-bold text-primary mt-16 mb-8 border-l-8 border-primary pl-8 animate-fade-in tracking-tight">
+          <h3 key={idx} className="text-2xl font-black text-primary mt-12 mb-6 border-b-2 border-primary/10 pb-4 animate-fade-in tracking-tight flex items-center gap-3">
+            <div className="w-2 h-8 bg-primary rounded-full"></div>
             {trimmedLine.replace(/#/g, '').trim()}
           </h3>
         );
@@ -102,7 +103,7 @@ const AIHub: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void }> =
       // 2. 보조 소제목 처리 (###)
       if (trimmedLine.startsWith('###')) {
         return (
-          <h4 key={idx} className="text-xl font-bold text-gray-800 mt-10 mb-4 pl-2 border-b-2 border-gray-100 pb-2">
+          <h4 key={idx} className="text-xl font-bold text-slate-800 mt-8 mb-4 pl-4 border-l-4 border-slate-200">
             {trimmedLine.replace(/#/g, '').trim()}
           </h4>
         );
@@ -110,28 +111,33 @@ const AIHub: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void }> =
 
       // 3. 볼드 기호(**) 제거 및 스타일 적용
       const boldRegex = /\*\*(.*?)\*\*/g;
-      const parts = line.split(boldRegex);
-      const renderedLine = parts.map((part, i) => {
-        if (i % 2 === 1) {
-          return (
-            <strong key={i} className="text-primary font-bold px-1 bg-primary/5 rounded-md ring-1 ring-primary/10 mx-0.5">
-              {part}
-            </strong>
-          );
-        }
-        return part;
-      });
-
-      // 4. 일반 문단 (줄바꿈 반영)
-      // 빈 줄은 간격으로 처리
-      if (trimmedLine === '') {
-        return <div key={idx} className="h-4" />;
-      }
+      
+      // 문장 단위로 분리하여 줄바꿈 적용 (가독성 개선)
+      // 마침표, 느낌표, 물음표 뒤에서 분리 (공백 유무 상관없이)
+      const sentences = trimmedLine.split(/(?<=[.!?])/).filter(s => s.trim().length > 0);
 
       return (
-        <p key={idx} className="text-gray-700 leading-relaxed mb-4 text-[17px] font-medium tracking-normal">
-          {renderedLine}
-        </p>
+        <div key={idx} className="mb-8">
+          {sentences.map((sentence, sIdx) => {
+            const cleanSentence = sentence.trim();
+            const parts = cleanSentence.split(boldRegex);
+            return (
+              <p key={sIdx} className="text-slate-600 leading-relaxed mb-4 text-[15px] font-medium tracking-tight">
+                {parts.map((part, i) => {
+                  if (i % 2 === 1) {
+                    return (
+                      <strong key={i} className="text-primary font-black px-0.5">
+                        {part}
+                      </strong>
+                    );
+                  }
+                  // 남은 별표 기호 제거
+                  return part.replace(/\*/g, '');
+                })}
+              </p>
+            );
+          })}
+        </div>
       );
     });
   };
@@ -260,7 +266,7 @@ const AIHub: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void }> =
                   {result.risk_priority_top5.map((risk: string, i: number) => (
                     <div key={i} className="flex items-center p-4 bg-red-500/5 rounded-2xl border border-red-500/10 group hover:bg-red-500/10 transition-colors">
                       <span className="w-8 h-8 bg-red-500 text-white rounded-xl flex items-center justify-center text-xs font-black mr-4 shadow-lg shadow-red-500/20 group-hover:scale-110 transition-transform">{i+1}</span>
-                      <span className="text-sm font-black text-red-900/80">{risk}</span>
+                      <span className="text-[14px] font-bold text-red-900/80">{risk}</span>
                     </div>
                   ))}
                </div>
@@ -273,7 +279,7 @@ const AIHub: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void }> =
                </div>
                <ul className="space-y-4">
                   {result.action_items?.map((item: string, i: number) => (
-                    <li key={i} className="text-sm font-black flex items-start gap-3 group">
+                    <li key={i} className="text-[14px] font-bold flex items-start gap-3 group">
                       <CheckCircle2 className="w-5 h-5 text-primary/60 mt-0.5 group-hover:scale-110 transition-transform" />
                       <span className="opacity-90 leading-relaxed">{item}</span>
                     </li>
@@ -338,8 +344,14 @@ const AIHub: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void }> =
                     <span>리포트 복사하기</span>
                   </button>
                </div>
-               <div className="prose prose-slate max-w-none text-slate-700 font-bold leading-loose h-[800px] overflow-y-auto pr-8 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
-                  {parseMarkdownLike(result.report_markdown)}
+               <div className="bg-white rounded-[3rem] border border-slate-100 shadow-inner p-10 text-slate-600 leading-relaxed h-[800px] overflow-y-auto pr-8 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent relative">
+                  {/* Subtle Watermark */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-[0.01] select-none rotate-[-30deg]">
+                    <span className="text-7xl font-black whitespace-nowrap uppercase tracking-[0.5em]">Confidential Report</span>
+                  </div>
+                  <div className="relative z-10">
+                    {parseMarkdownLike(result.report_markdown)}
+                  </div>
                </div>
             </div>
           </div>

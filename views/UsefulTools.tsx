@@ -1161,10 +1161,28 @@ const InsuranceAgeTool: React.FC = () => {
   const [aiTip, setAiTip] = useState<string | null>(null);
   const [isGeneratingTip, setIsGeneratingTip] = useState(false);
 
+  const handleBirthDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^0-9]/g, '');
+    let formatted = value;
+    if (value.length > 4 && value.length <= 6) {
+      formatted = value.slice(0, 4) + '-' + value.slice(4);
+    } else if (value.length > 6) {
+      formatted = value.slice(0, 4) + '-' + value.slice(4, 6) + '-' + value.slice(6, 8);
+    }
+    setBirthDate(formatted);
+  };
+
   const calculateAge = async () => {
-    if (!birthDate) return;
+    if (!birthDate || birthDate.length < 10) {
+      alert("생년월일 8자리를 정확히 입력해주세요. (예: 19800301)");
+      return;
+    }
     
     const birth = new Date(birthDate);
+    if (isNaN(birth.getTime())) {
+      alert("유효하지 않은 날짜입니다.");
+      return;
+    }
     const today = new Date();
     
     const diffTime = Math.abs(today.getTime() - birth.getTime());
@@ -1221,11 +1239,13 @@ const InsuranceAgeTool: React.FC = () => {
 
           <div className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">생년월일</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">생년월일 (8자리 입력)</label>
               <input 
-                type="date" 
+                type="text" 
                 value={birthDate} 
-                onChange={e => setBirthDate(e.target.value)}
+                onChange={handleBirthDateChange}
+                placeholder="예: 19800301"
+                maxLength={10}
                 className="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-slate-700/5 transition-all text-lg font-bold" 
               />
             </div>
