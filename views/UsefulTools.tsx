@@ -542,6 +542,15 @@ const BusinessCardTool: React.FC = () => {
   const [aiSlogans, setAiSlogans] = useState<string[]>([]);
   const [isGeneratingSlogan, setIsGeneratingSlogan] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(1);
+
+  const templates = [
+    { id: 1, name: '모던 에메랄드', color: 'bg-emerald-500' },
+    { id: 2, name: '미드나잇 프로', color: 'bg-slate-900' },
+    { id: 3, name: '미니멀 화이트', color: 'bg-slate-100' },
+    { id: 4, name: '크리에이티브 그라디언트', color: 'bg-indigo-500' },
+    { id: 5, name: '클래식 코퍼레이트', color: 'bg-blue-600' },
+  ];
 
   const handleSaveImage = async () => {
     if (!cardRef.current) return;
@@ -697,6 +706,28 @@ const BusinessCardTool: React.FC = () => {
             </div>
           </div>
 
+          <div className="space-y-4 pt-4 border-t border-slate-100">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">디자인 템플릿 선택</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+              {templates.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setSelectedTemplate(t.id)}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${
+                    selectedTemplate === t.id 
+                      ? 'border-emerald-500 bg-emerald-50 shadow-sm' 
+                      : 'border-slate-100 bg-white hover:border-slate-200'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-lg ${t.color} shadow-inner`}></div>
+                  <span className={`text-[10px] font-bold ${selectedTemplate === t.id ? 'text-emerald-700' : 'text-slate-500'}`}>
+                    {t.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button 
             onClick={handleSaveImage}
             disabled={isSaving}
@@ -708,36 +739,75 @@ const BusinessCardTool: React.FC = () => {
         </div>
 
         <div className="flex-1 flex items-center justify-center bg-slate-50 rounded-[3rem] p-8 lg:p-12 border border-slate-100 min-h-[600px]">
-          <div ref={cardRef} className="w-full max-w-md bg-white rounded-[2rem] shadow-[0_40px_80px_-12px_rgba(0,0,0,0.18)] flex flex-col relative overflow-hidden group border border-slate-100">
-            {/* Design Accents - More sophisticated gradients */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-full -mr-32 -mt-32 transition-all duration-1000 group-hover:scale-110"></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-slate-900/5 to-transparent rounded-full -ml-24 -mb-24 transition-all duration-1000 group-hover:scale-110"></div>
+          <div ref={cardRef} className={`w-full max-w-md rounded-[2rem] shadow-[0_40px_80px_-12px_rgba(0,0,0,0.18)] flex flex-col relative overflow-hidden group border transition-all duration-500 ${
+            selectedTemplate === 1 ? 'bg-white border-slate-100' :
+            selectedTemplate === 2 ? 'bg-slate-900 border-slate-800 text-white' :
+            selectedTemplate === 3 ? 'bg-white border-slate-200' :
+            selectedTemplate === 4 ? 'bg-gradient-to-br from-indigo-600 to-violet-700 border-indigo-500 text-white' :
+            'bg-slate-50 border-slate-200'
+          }`}>
+            {/* Design Accents */}
+            {selectedTemplate === 1 && (
+              <>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-full -mr-32 -mt-32 transition-all duration-1000 group-hover:scale-110"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-slate-900/5 to-transparent rounded-full -ml-24 -mb-24 transition-all duration-1000 group-hover:scale-110"></div>
+              </>
+            )}
+            {selectedTemplate === 2 && (
+              <>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-500/5 rounded-full -ml-24 -mb-24 blur-3xl"></div>
+              </>
+            )}
+            {selectedTemplate === 4 && (
+              <>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-2xl"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full -ml-24 -mb-24 blur-2xl"></div>
+              </>
+            )}
+            {selectedTemplate === 5 && (
+              <div className="absolute top-0 left-0 w-2 h-full bg-blue-600"></div>
+            )}
             
             <div className="p-10 space-y-10 relative z-10">
               {/* Header Section */}
               <div className="flex justify-between items-start gap-4">
                 <div className="space-y-2 flex-1">
-                  <h4 className="text-4xl font-black text-slate-900 tracking-tight leading-none">{name}</h4>
+                  <h4 className={`text-4xl font-black tracking-tight leading-none ${
+                    selectedTemplate === 2 || selectedTemplate === 4 ? 'text-white' : 'text-slate-900'
+                  }`}>{name}</h4>
                   <div className="flex items-center gap-2">
-                    <div className="w-1 h-3 bg-emerald-500 rounded-full"></div>
-                    <p className="text-emerald-600 text-xs font-black uppercase tracking-[0.25em]">{title}</p>
+                    <div className={`w-1 h-3 rounded-full ${
+                      selectedTemplate === 4 ? 'bg-white' : 'bg-emerald-500'
+                    }`}></div>
+                    <p className={`text-xs font-black uppercase tracking-[0.25em] ${
+                      selectedTemplate === 2 ? 'text-emerald-400' :
+                      selectedTemplate === 4 ? 'text-indigo-100' :
+                      'text-emerald-600'
+                    }`}>{title}</p>
                   </div>
                 </div>
                 
-                {/* Sophisticated Icon or Profile Image */}
+                {/* Profile Image */}
                 <div className="relative shrink-0">
-                  <div className="w-32 h-32 rounded-[2rem] bg-slate-900 overflow-hidden shadow-2xl ring-4 ring-white transition-transform duration-500 group-hover:rotate-3">
+                  <div className={`w-32 h-32 rounded-[2rem] overflow-hidden shadow-2xl ring-4 transition-transform duration-500 group-hover:rotate-3 ${
+                    selectedTemplate === 2 || selectedTemplate === 4 ? 'bg-slate-800 ring-white/10' : 'bg-slate-900 ring-white'
+                  }`}>
                     {profileImage ? (
                       <img src={profileImage} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950">
-                        <Award className="w-16 h-16 text-emerald-400" />
+                      <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${
+                        selectedTemplate === 4 ? 'from-indigo-500 to-violet-600' : 'from-slate-800 to-slate-950'
+                      }`}>
+                        <Award className={`w-16 h-16 ${selectedTemplate === 4 ? 'text-white' : 'text-emerald-400'}`} />
                       </div>
                     )}
                   </div>
                   {!profileImage && (
-                    <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
-                      <Sparkles className="w-5 h-5 text-white" />
+                    <div className={`absolute -bottom-2 -right-2 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${
+                      selectedTemplate === 4 ? 'bg-white text-indigo-600' : 'bg-emerald-500 text-white'
+                    }`}>
+                      <Sparkles className="w-5 h-5" />
                     </div>
                   )}
                 </div>
@@ -745,67 +815,109 @@ const BusinessCardTool: React.FC = () => {
 
               {/* Intro Section */}
               {intro && (
-                <div className="relative py-5 px-7 bg-slate-50/80 backdrop-blur-sm rounded-3xl border border-slate-100 shadow-inner">
-                  <Quote className="absolute -top-3 -left-1 w-6 h-6 text-emerald-500/20" />
-                  <p className="text-sm text-slate-600 font-bold leading-relaxed italic">{intro}</p>
+                <div className={`relative py-5 px-7 rounded-3xl border shadow-inner ${
+                  selectedTemplate === 2 ? 'bg-white/5 border-white/10' :
+                  selectedTemplate === 4 ? 'bg-black/10 border-white/10' :
+                  'bg-slate-50/80 border-slate-100'
+                }`}>
+                  <Quote className={`absolute -top-3 -left-1 w-6 h-6 ${
+                    selectedTemplate === 4 ? 'text-white/20' : 'text-emerald-500/20'
+                  }`} />
+                  <p className={`text-sm font-bold leading-relaxed italic ${
+                    selectedTemplate === 2 || selectedTemplate === 4 ? 'text-slate-300' : 'text-slate-600'
+                  }`}>{intro}</p>
                 </div>
               )}
 
-              {/* Contact Info Grid - More refined spacing and icons */}
+              {/* Contact Info Grid */}
               <div className="grid grid-cols-1 gap-5">
                 <div className="flex items-center gap-5 group/item">
-                  <div className="w-10 h-10 rounded-2xl bg-white shadow-sm border border-slate-50 flex items-center justify-center text-slate-400 group-hover/item:bg-emerald-500 group-hover/item:text-white transition-all duration-300">
+                  <div className={`w-10 h-10 rounded-2xl shadow-sm border flex items-center justify-center transition-all duration-300 ${
+                    selectedTemplate === 2 ? 'bg-white/5 border-white/10 text-slate-400 group-hover/item:bg-emerald-500 group-hover/item:text-white' :
+                    selectedTemplate === 4 ? 'bg-white/10 border-white/10 text-indigo-100 group-hover/item:bg-white group-hover/item:text-indigo-600' :
+                    'bg-white border-slate-50 text-slate-400 group-hover/item:bg-emerald-500 group-hover/item:text-white'
+                  }`}>
                     <Phone className="w-4 h-4" />
                   </div>
-                  <span className="text-base font-black text-slate-800">{phone}</span>
+                  <span className={`text-base font-black ${
+                    selectedTemplate === 2 || selectedTemplate === 4 ? 'text-white' : 'text-slate-800'
+                  }`}>{phone}</span>
                 </div>
                 
                 {email && (
                   <div className="flex items-center gap-5 group/item">
-                    <div className="w-10 h-10 rounded-2xl bg-white shadow-sm border border-slate-50 flex items-center justify-center text-slate-400 group-hover/item:bg-emerald-500 group-hover/item:text-white transition-all duration-300">
+                    <div className={`w-10 h-10 rounded-2xl shadow-sm border flex items-center justify-center transition-all duration-300 ${
+                      selectedTemplate === 2 ? 'bg-white/5 border-white/10 text-slate-400 group-hover/item:bg-emerald-500 group-hover/item:text-white' :
+                      selectedTemplate === 4 ? 'bg-white/10 border-white/10 text-indigo-100 group-hover/item:bg-white group-hover/item:text-indigo-600' :
+                      'bg-white border-slate-50 text-slate-400 group-hover/item:bg-emerald-500 group-hover/item:text-white'
+                    }`}>
                       <Mail className="w-4 h-4" />
                     </div>
-                    <span className="text-sm font-bold text-slate-600">{email}</span>
+                    <span className={`text-sm font-bold ${
+                      selectedTemplate === 2 || selectedTemplate === 4 ? 'text-slate-300' : 'text-slate-600'
+                    }`}>{email}</span>
                   </div>
                 )}
 
                 {(company || regNo) && (
                   <div className="flex items-center gap-5 group/item">
-                    <div className="w-10 h-10 rounded-2xl bg-white shadow-sm border border-slate-50 flex items-center justify-center text-slate-400 group-hover/item:bg-emerald-500 group-hover/item:text-white transition-all duration-300">
+                    <div className={`w-10 h-10 rounded-2xl shadow-sm border flex items-center justify-center transition-all duration-300 ${
+                      selectedTemplate === 2 ? 'bg-white/5 border-white/10 text-slate-400 group-hover/item:bg-emerald-500 group-hover/item:text-white' :
+                      selectedTemplate === 4 ? 'bg-white/10 border-white/10 text-indigo-100 group-hover/item:bg-white group-hover/item:text-indigo-600' :
+                      'bg-white border-slate-50 text-slate-400 group-hover/item:bg-emerald-500 group-hover/item:text-white'
+                    }`}>
                       <Briefcase className="w-4 h-4" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-sm font-bold text-slate-700">{company}</span>
-                      {regNo && <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Reg No. {regNo}</span>}
+                      <span className={`text-sm font-bold ${
+                        selectedTemplate === 2 || selectedTemplate === 4 ? 'text-slate-200' : 'text-slate-700'
+                      }`}>{company}</span>
+                      {regNo && <span className={`text-[10px] font-black uppercase tracking-widest mt-0.5 ${
+                        selectedTemplate === 2 || selectedTemplate === 4 ? 'text-slate-500' : 'text-slate-400'
+                      }`}>Reg No. {regNo}</span>}
                     </div>
                   </div>
                 )}
 
                 {address && (
                   <div className="flex items-center gap-5 group/item">
-                    <div className="w-10 h-10 rounded-2xl bg-white shadow-sm border border-slate-50 flex items-center justify-center text-slate-400 group-hover/item:bg-emerald-500 group-hover/item:text-white transition-all duration-300">
+                    <div className={`w-10 h-10 rounded-2xl shadow-sm border flex items-center justify-center transition-all duration-300 ${
+                      selectedTemplate === 2 ? 'bg-white/5 border-white/10 text-slate-400 group-hover/item:bg-emerald-500 group-hover/item:text-white' :
+                      selectedTemplate === 4 ? 'bg-white/10 border-white/10 text-indigo-100 group-hover/item:bg-white group-hover/item:text-indigo-600' :
+                      'bg-white border-slate-50 text-slate-400 group-hover/item:bg-emerald-500 group-hover/item:text-white'
+                    }`}>
                       <MapPin className="w-4 h-4" />
                     </div>
-                    <span className="text-sm font-bold text-slate-600">{address}</span>
+                    <span className={`text-sm font-bold ${
+                      selectedTemplate === 2 || selectedTemplate === 4 ? 'text-slate-300' : 'text-slate-600'
+                    }`}>{address}</span>
                   </div>
                 )}
               </div>
 
-              {/* Social Links - More premium look */}
+              {/* Social Links */}
               {(kakao || blog || insta) && (
-                <div className="pt-8 border-t border-slate-100 flex flex-wrap gap-3">
+                <div className={`pt-8 border-t flex flex-wrap gap-3 ${
+                  selectedTemplate === 2 || selectedTemplate === 4 ? 'border-white/10' : 'border-slate-100'
+                }`}>
                   {kakao && (
-                    <div className="flex items-center gap-2.5 px-4 py-2 bg-yellow-400/10 text-yellow-700 rounded-xl text-xs font-black border border-yellow-400/20">
+                    <div className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-xs font-black border ${
+                      selectedTemplate === 4 ? 'bg-white/10 text-white border-white/10' : 'bg-yellow-400/10 text-yellow-700 border-yellow-400/20'
+                    }`}>
                       <MessageCircle className="w-3.5 h-3.5" /> {kakao}
                     </div>
                   )}
                   {insta && (
-                    <div className="flex items-center gap-2.5 px-4 py-2 bg-pink-500/10 text-pink-700 rounded-xl text-xs font-black border border-pink-500/20">
+                    <div className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-xs font-black border ${
+                      selectedTemplate === 4 ? 'bg-white/10 text-white border-white/10' : 'bg-pink-500/10 text-pink-700 border-pink-500/20'
+                    }`}>
                       <Instagram className="w-3.5 h-3.5" /> {insta}
                     </div>
                   )}
                   {blog && (
-                    <div className="flex items-center gap-2.5 px-4 py-2 bg-blue-500/10 text-blue-700 rounded-xl text-xs font-black border border-blue-500/20">
+                    <div className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-xs font-black border ${
+                      selectedTemplate === 4 ? 'bg-white/10 text-white border-white/10' : 'bg-blue-500/10 text-blue-700 border-blue-500/20'
+                    }`}>
                       <Globe className="w-3.5 h-3.5" /> {blog.length > 25 ? 'Official Blog' : blog}
                     </div>
                   )}
@@ -813,12 +925,16 @@ const BusinessCardTool: React.FC = () => {
               )}
             </div>
 
-            {/* Footer - Simplified and more modern */}
-            <div className="mt-auto bg-slate-950 p-8 flex justify-center items-center">
-              <div className="flex items-center gap-3 opacity-40">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+            {/* Footer - Removed black color as requested */}
+            <div className={`mt-auto p-8 flex justify-center items-center ${
+              selectedTemplate === 2 ? 'bg-black/20' : 
+              selectedTemplate === 4 ? 'bg-white/5' : 
+              'bg-slate-50/50'
+            }`}>
+              <div className="flex items-center gap-3 opacity-20">
+                <div className={`w-1.5 h-1.5 rounded-full ${selectedTemplate === 4 ? 'bg-white' : 'bg-emerald-500'}`}></div>
+                <div className={`w-1.5 h-1.5 rounded-full ${selectedTemplate === 4 ? 'bg-white' : 'bg-emerald-500'}`}></div>
+                <div className={`w-1.5 h-1.5 rounded-full ${selectedTemplate === 4 ? 'bg-white' : 'bg-emerald-500'}`}></div>
               </div>
             </div>
           </div>
