@@ -43,6 +43,25 @@ const Admin: React.FC<AdminProps> = ({
   const [notifTarget, setNotifTarget] = useState<'ALL' | string>('ALL');
   const [selectedNotifs, setSelectedNotifs] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [supabaseStatus, setSupabaseStatus] = useState<{ status: 'checking' | 'connected' | 'error', message?: string }>({ status: 'checking' });
+
+  // Check Supabase connection on mount
+  React.useEffect(() => {
+    const checkConn = async () => {
+      try {
+        const { error } = await supabase.from('users').select('count', { count: 'exact', head: true });
+        if (error) throw error;
+        setSupabaseStatus({ status: 'connected' });
+      } catch (err: any) {
+        console.error('[Admin] Supabase connection check failed:', err);
+        setSupabaseStatus({ 
+          status: 'error', 
+          message: `${err.message || 'Unknown error'} (Code: ${err.code || 'N/A'})` 
+        });
+      }
+    };
+    checkConn();
+  }, []);
 
   // Sync local state when props change
   React.useEffect(() => {
@@ -296,6 +315,30 @@ const Admin: React.FC<AdminProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Supabase Connection Status */}
+      <div className="p-6 bg-white/50 backdrop-blur-sm rounded-3xl border border-white/20 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className={`w-4 h-4 rounded-full ${
+            supabaseStatus.status === 'connected' ? 'bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.6)]' : 
+            supabaseStatus.status === 'error' ? 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)]' : 
+            'bg-yellow-500 animate-pulse'
+          }`}></div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Database Connection</p>
+            <p className="text-lg font-black text-slate-800 tracking-tight">
+              {supabaseStatus.status === 'connected' ? 'Supabase Connected' : 
+               supabaseStatus.status === 'error' ? 'Connection Failed' : 'Checking Connection...'}
+            </p>
+          </div>
+        </div>
+        {supabaseStatus.status === 'error' && (
+          <div className="text-right bg-red-50 p-3 rounded-2xl border border-red-100 max-w-[400px]">
+            <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1">Error Details</p>
+            <p className="text-xs font-bold text-red-600 break-words">{supabaseStatus.message}</p>
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-2xl border shadow-sm">
           <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">서버 상태</h4>

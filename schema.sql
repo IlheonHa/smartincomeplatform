@@ -8,15 +8,15 @@
 
 DO $$ 
 BEGIN
-    -- 모든 테이블의 RLS 비활성화
-    ALTER TABLE IF EXISTS public.users DISABLE ROW LEVEL SECURITY;
-    ALTER TABLE IF EXISTS public.leads DISABLE ROW LEVEL SECURITY;
-    ALTER TABLE IF EXISTS public.calendar_events DISABLE ROW LEVEL SECURITY;
-    ALTER TABLE IF EXISTS public.system_settings DISABLE ROW LEVEL SECURITY;
-    ALTER TABLE IF EXISTS public.dashboard_data DISABLE ROW LEVEL SECURITY;
-    ALTER TABLE IF EXISTS public.notifications DISABLE ROW LEVEL SECURITY;
-    ALTER TABLE IF EXISTS public.form_configs DISABLE ROW LEVEL SECURITY;
-    ALTER TABLE IF EXISTS public.landing_pages DISABLE ROW LEVEL SECURITY;
+    -- 모든 테이블의 RLS 활성화 (보안을 위해 켜두고 정책으로 관리)
+    ALTER TABLE IF EXISTS public.users ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE IF EXISTS public.leads ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE IF EXISTS public.calendar_events ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE IF EXISTS public.system_settings ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE IF EXISTS public.dashboard_data ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE IF EXISTS public.notifications ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE IF EXISTS public.form_configs ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE IF EXISTS public.landing_pages ENABLE ROW LEVEL SECURITY;
 
     -- 모든 테이블에 대한 권한 부여
     GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
@@ -171,22 +171,31 @@ ON CONFLICT (id) DO NOTHING;
 -- Final Security Check (마지막 보안 확인)
 -- ==========================================
 
--- 모든 테이블의 RLS를 다시 한번 확실히 비활성화합니다.
-ALTER TABLE IF EXISTS public.users DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.leads DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.calendar_events DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.system_settings DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.dashboard_data DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.notifications DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.form_configs DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.landing_pages DISABLE ROW LEVEL SECURITY;
+-- 모든 테이블의 RLS를 활성화합니다. (보안의 기본)
+ALTER TABLE IF EXISTS public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.leads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.calendar_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.system_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.dashboard_data ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.form_configs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.landing_pages ENABLE ROW LEVEL SECURITY;
 
--- 모든 정책 삭제 (혹시 남아있을 수 있는 정책 제거)
-DROP POLICY IF EXISTS "Enable read access for all users" ON public.users;
-DROP POLICY IF EXISTS "Enable insert for all users" ON public.users;
-DROP POLICY IF EXISTS "Enable update for all users" ON public.users;
-DROP POLICY IF EXISTS "Enable delete for all users" ON public.users;
+-- 모든 테이블에 대해 익명(anon) 및 인증(authenticated) 사용자의 모든 접근을 허용하는 정책 생성
+-- (현재 커스텀 인증 방식을 사용 중이므로 모든 접근을 허용하되 RLS는 켜둡니다)
+
+DO $$ 
+DECLARE 
+    t text;
+BEGIN
+    FOR t IN SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+    LOOP
+        EXECUTE format('DROP POLICY IF EXISTS "Enable all access for all users" ON public.%I', t);
+        EXECUTE format('CREATE POLICY "Enable all access for all users" ON public.%I FOR ALL USING (true) WITH CHECK (true)', t);
+    END LOOP;
+END $$;
 
 -- 권한 재확인
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;

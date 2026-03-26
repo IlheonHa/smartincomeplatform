@@ -603,6 +603,7 @@ export const designInsurancePlan = async (customerInput: string) => {
     반드시 다음 구조의 JSON 텍스트만 출력하세요. 다른 설명은 일절 배제하세요.
     마크다운 리포트는 "report_markdown" 필드에 상세히 작성하세요.
     중요: "report_markdown" 내부에 <h1>, <p> 등 HTML 태그를 절대 사용하지 마세요. 순수 마크다운(##, ###, **, - 등)만 사용하세요.
+    가독성을 위해 모든 문장이 끝나면 반드시 줄바꿈(\n)을 하여 문장을 분리하고, 소제목(##) 앞뒤로 충분한 여백을 두세요.
     {
       "profile_summary": { "life_cycle": "...", "risk_appetite": "...", "priority_goal": "..." },
       "risk_priority_top5": ["...", "...", "...", "...", "..."],

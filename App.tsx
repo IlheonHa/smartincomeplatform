@@ -161,6 +161,15 @@ const App: React.FC = () => {
       );
 
       const fetchFromSupabase = (async () => {
+        console.log('[App] Attempting Supabase fetch with URL:', supabaseUrl);
+        
+        // Test connection first
+        const { error: connErr } = await supabase.from('users').select('count', { count: 'exact', head: true });
+        if (connErr) {
+          console.error('[App] Supabase connection test failed:', connErr);
+          throw new Error(`SUPABASE_CONNECTION_ERROR: ${connErr.message} (Code: ${connErr.code})`);
+        }
+
         const { data: userData, error: userErr } = await supabase.from('users').select('*');
         if (userErr) {
           console.error('[App] Supabase fetch users error:', userErr);
