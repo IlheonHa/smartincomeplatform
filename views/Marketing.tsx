@@ -292,19 +292,22 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
     // HTML 태그 제거
     const cleanText = text.replace(/<[^>]*>/g, '');
     
-    const lines = cleanText.split('\n');
+    // 연속된 개행 문자 정규화
+    const normalizedText = cleanText.replace(/\n{3,}/g, '\n\n');
+    const lines = normalizedText.split('\n');
+    
     return lines.map((line, idx) => {
       const trimmedLine = line.trim();
       
       // 빈 줄 처리
       if (!trimmedLine) {
-        return <div key={idx} className="h-4" />;
+        return <div key={idx} className="h-6" />;
       }
 
       // 1. 소제목 처리 (##)
       if (trimmedLine.startsWith('##')) {
         return (
-          <h3 key={idx} className="text-2xl font-extrabold text-primary mt-12 mb-6 bg-primary/5 p-4 rounded-xl border-l-4 border-primary animate-fade-in tracking-tight">
+          <h3 key={idx} className="text-2xl font-black text-primary mt-14 mb-8 bg-primary/5 p-6 rounded-[2rem] border-l-[8px] border-primary animate-fade-in tracking-tight shadow-sm">
             {trimmedLine.replace(/#/g, '').trim()}
           </h3>
         );
@@ -313,7 +316,7 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
       // 2. 보조 소제목 처리 (###)
       if (trimmedLine.startsWith('###')) {
         return (
-          <h4 key={idx} className="text-xl font-bold text-gray-800 mt-8 mb-4 pl-3 border-l-2 border-slate-200">
+          <h4 key={idx} className="text-xl font-extrabold text-gray-800 mt-10 mb-6 pl-4 border-l-4 border-slate-200 tracking-tight">
             {trimmedLine.replace(/#/g, '').trim()}
           </h4>
         );
@@ -327,15 +330,15 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
       const sentences = trimmedLine.split(/(?<=[.!?])\s+/);
 
       return (
-        <div key={idx} className="mb-6">
+        <div key={idx} className="mb-8">
           {sentences.map((sentence, sIdx) => {
             const parts = sentence.split(boldRegex);
             return (
-              <p key={sIdx} className="text-gray-700 leading-relaxed mb-2 text-[15px] font-normal tracking-normal">
+              <p key={sIdx} className="text-gray-700 leading-[1.8] mb-4 text-[17px] font-medium tracking-normal">
                 {parts.map((part, i) => {
                   if (i % 2 === 1) {
                     return (
-                      <strong key={i} className="text-primary font-bold">
+                      <strong key={i} className="text-primary font-black bg-primary/5 px-1 rounded">
                         {part}
                       </strong>
                     );
@@ -355,9 +358,10 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
     if (!finalPost) return;
     // 클립보드 복사 시 마크다운 기호(#)를 모두 제거하여 순수 텍스트만 복사
     const cleanContent = finalPost.content
-      .replace(/## /g, '\n[제목] ')
-      .replace(/### /g, '\n[부제목] ')
-      .replace(/\*\*(.*?)\*\*/g, '$1');
+      .replace(/## /g, '\n')
+      .replace(/### /g, '\n')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*/g, '');
     
     const hashtags = finalPost.hashtags.map((h: string) => h.startsWith('#') ? h : '#' + h).join(' ');
     const fullText = `${selectedTitle}\n\n${cleanContent}\n\n${hashtags}`;
@@ -368,28 +372,30 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
   const handleCopyRichText = () => {
     if (!finalPost) return;
     
-    let htmlContent = `<div style="font-family: sans-serif; line-height: 1.6; color: #333;">`;
-    htmlContent += `<h1 style="color: #002d62; font-size: 28px; border-bottom: 2px solid #002d62; padding-bottom: 10px;">${selectedTitle}</h1>\n`;
+    let htmlContent = `<div style="font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; line-height: 1.8; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">`;
+    htmlContent += `<h1 style="color: #002d62; font-size: 32px; font-weight: 900; border-bottom: 4px solid #002d62; padding-bottom: 15px; margin-bottom: 40px; letter-spacing: -0.02em;">${selectedTitle}</h1>\n`;
     
     const lines = finalPost.content.split('\n');
     lines.forEach((line: string) => {
       let processedLine = line.trim();
       if (processedLine.startsWith('##')) {
-        htmlContent += `<h2 style="color: #002d62; font-size: 22px; background-color: #f0f4f8; padding: 10px; border-left: 5px solid #002d62; margin-top: 30px;">${processedLine.replace(/#/g, '').trim()}</h2>\n`;
+        htmlContent += `<h2 style="color: #002d62; font-size: 24px; font-weight: 900; background-color: #f0f4f8; padding: 20px; border-left: 8px solid #002d62; margin-top: 50px; margin-bottom: 25px; border-radius: 10px;">${processedLine.replace(/#/g, '').trim()}</h2>\n`;
       } else if (processedLine.startsWith('###')) {
-        htmlContent += `<h3 style="color: #333; font-size: 18px; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 20px;">${processedLine.replace(/#/g, '').trim()}</h3>\n`;
+        htmlContent += `<h3 style="color: #333; font-size: 20px; font-weight: 800; border-bottom: 2px solid #eee; padding-bottom: 8px; margin-top: 35px; margin-bottom: 20px;">${processedLine.replace(/#/g, '').trim()}</h3>\n`;
       } else if (processedLine) {
         // 문장 단위로 분리하여 줄바꿈 적용
         const sentences = processedLine.split(/(?<=[.!?])\s+/);
         sentences.forEach((sentence: string) => {
-          const boldProcessed = sentence.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #002d62;">$1</strong>').replace(/\*/g, '');
-          htmlContent += `<p style="margin-bottom: 10px; font-size: 15px;">${boldProcessed}</p>\n`;
+          const boldProcessed = sentence.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #002d62; font-weight: 900; background-color: #fff3bf; padding: 0 2px;">$1</strong>').replace(/\*/g, '');
+          htmlContent += `<p style="margin-bottom: 15px; font-size: 17px; font-weight: 500;">${boldProcessed}</p>\n`;
         });
+      } else {
+        htmlContent += `<div style="height: 20px;"></div>\n`;
       }
     });
     
     const hashtags = finalPost.hashtags.map((h: string) => h.startsWith('#') ? h : '#' + h).join(' ');
-    htmlContent += `<p style="margin-top: 30px; color: #002d62; font-weight: bold;">${hashtags}</p>`;
+    htmlContent += `<p style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; color: #002d62; font-weight: 900; font-size: 15px;">${hashtags}</p>`;
     htmlContent += `</div>`;
 
     try {
