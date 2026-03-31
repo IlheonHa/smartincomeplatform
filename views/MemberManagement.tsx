@@ -307,11 +307,17 @@ const MemberManagement: React.FC<MemberManagementProps> = ({ users, onUpdateUser
   };
 
   const filteredUsers = useMemo(() => {
-    return users.filter(u => {
-      const matchesSearch = u.name.includes(searchTerm) || u.loginId.includes(searchTerm) || u.phone.includes(searchTerm);
-      const matchesGrade = gradeFilter === 'ALL' || u.grade === gradeFilter;
-      return matchesSearch && matchesGrade;
-    });
+    return users
+      .filter(u => {
+        const matchesSearch = u.name.includes(searchTerm) || u.loginId.includes(searchTerm) || u.phone.includes(searchTerm);
+        const matchesGrade = gradeFilter === 'ALL' || u.grade === gradeFilter;
+        return matchesSearch && matchesGrade;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA;
+      });
   }, [users, searchTerm, gradeFilter]);
 
   const { totalMonthlyRevenue, overdueCount, partnerCount, activePartnerCount } = useMemo(() => {

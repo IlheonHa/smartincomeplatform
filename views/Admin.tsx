@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { DashboardData, ChartDataPoint, SystemSettings, User, UserRole, AppNotification } from '../types';
 import { Send, Trash2, Users as UsersIcon, User as UserIcon, Bell, Activity, Upload, Package, FileArchive, Download } from 'lucide-react';
 import { supabase } from '../src/lib/supabase';
@@ -72,7 +72,15 @@ const Admin: React.FC<AdminProps> = ({
     setEditChart(dashboardData.chartData);
   }, [dashboardData.chartData]);
 
-  const partners = users.filter(u => u.role === UserRole.PARTNER);
+  const partners = useMemo(() => {
+    return users
+      .filter(u => u.role === UserRole.PARTNER)
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA;
+      });
+  }, [users]);
 
   const handleSendNotification = (e: React.FormEvent) => {
     e.preventDefault();
