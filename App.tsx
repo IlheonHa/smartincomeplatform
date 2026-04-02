@@ -436,6 +436,8 @@ const App: React.FC = () => {
     }));
   }, [users, leads]);
 
+  const [hasLoggedThisSession, setHasLoggedThisSession] = useState(false);
+
   useEffect(() => {
     if (currentUser) {
       sessionStorage.setItem('sil_current_user', JSON.stringify(currentUser));
@@ -448,9 +450,40 @@ const App: React.FC = () => {
       }
     } else {
       sessionStorage.removeItem('sil_current_user');
+      setHasLoggedThisSession(false);
     }
   }, [currentUser, users]);
 
+  // Record login log once per session
+  useEffect(() => {
+    if (currentUser && !hasLoggedThisSession) {
+      console.log('[App] Recording login log for session:', currentUser.loginId);
+      recordLoginLog(currentUser);
+      setHasLoggedThisSession(true);
+    }
+  }, [currentUser, hasLoggedThisSession]);
+
+  /*
+  SQL Schema for login_logs table:
+  CREATE TABLE login_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id TEXT NOT NULL,
+    user_name TEXT NOT NULL,
+    login_id TEXT NOT NULL,
+    user_agent TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  );
+
+  -- RLS Policies (Allow admins to read all, users to insert their own)
+  ALTER TABLE login_logs ENABLE ROW LEVEL SECURITY;
+  CREATE POLICY "Allow insert for all" ON login_logs FOR INSERT WITH CHECK (true);
+  CREATE POLICY "Allow read for admins" ON login_logs FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM users 
+      WHERE users.id = auth.uid() AND users.role = 'ADMIN'
+    )
+  );
+  */
   const recordLoginLog = async (user: User) => {
     try {
       const newLog: LoginLog = {
@@ -502,7 +535,6 @@ const App: React.FC = () => {
           return { success: false, message: '비활성화된 계정입니다. 관리자에게 문의하세요.' };
         }
         setCurrentUser(dbUser);
-        recordLoginLog(dbUser);
         return { success: true };
       }
 
@@ -519,7 +551,6 @@ const App: React.FC = () => {
         };
         const user = adminInfo as User;
         setCurrentUser(user);
-        recordLoginLog(user);
         return { success: true };
       }
 
