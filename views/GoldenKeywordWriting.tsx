@@ -73,7 +73,7 @@ const INITIAL_STATE: GoldenKeywordState = {
   isAutoGenerating: false,
 };
 
-const GoldenKeywordWriting: React.FC = () => {
+const GoldenKeywordWriting: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void }> = ({ currentUser, onUpdateUser }) => {
   const [state, setState] = useState<GoldenKeywordState>(INITIAL_STATE);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState('');
@@ -251,6 +251,12 @@ const GoldenKeywordWriting: React.FC = () => {
         currentStep: 7
       });
 
+      // Update user count
+      onUpdateUser({
+        ...currentUser,
+        goldenSystemCount: (currentUser.goldenSystemCount || 0) + 1
+      });
+
       setLoadingStatus('AI 이미지를 생성하여 본문에 삽입하는 중입니다...');
 
       // Background image generation
@@ -308,6 +314,12 @@ const GoldenKeywordWriting: React.FC = () => {
           content: result.content
         },
         currentStep: 7
+      });
+
+      // Update user count
+      onUpdateUser({
+        ...currentUser,
+        goldenSystemCount: (currentUser.goldenSystemCount || 0) + 1
       });
 
       setLoadingStatus('AI 이미지를 생성하여 본문에 삽입하는 중...');

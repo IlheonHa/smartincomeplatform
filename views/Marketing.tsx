@@ -173,6 +173,12 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
       const imgs = (await Promise.all(imagePromises)).filter((img): img is string => img !== null);
       setFinalImages(imgs);
       setStep('GENERATION');
+
+      // Update user count
+      onUpdateUser({
+        ...currentUser,
+        contentGenerationCount: (currentUser.contentGenerationCount || 0) + 1
+      });
     } catch (error: any) {
       console.error(error);
       if (error.message?.includes("AUTH_REQUIRED")) {
@@ -275,6 +281,12 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
 
       const imgs = (await Promise.all(imagePromises)).filter((img): img is string => img !== null);
       setFinalImages(imgs);
+
+      // Update user count
+      onUpdateUser({
+        ...currentUser,
+        contentGenerationCount: (currentUser.contentGenerationCount || 0) + 1
+      });
     } catch (error: any) {
       console.error(error);
       alert('자동 생성 중 오류가 발생했습니다.');

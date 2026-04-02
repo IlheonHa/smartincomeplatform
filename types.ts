@@ -27,6 +27,16 @@ export enum SubscriptionStatus {
   CANCELLED = 'CANCELLED'
 }
 
+export interface LoginLog {
+  id: string;
+  userId: string;
+  userName: string;
+  loginId: string;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: string;
+}
+
 export interface User {
   id: string;
   loginId: string;

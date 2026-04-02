@@ -57,6 +57,12 @@ const AIHub: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void }> =
       const design = await designInsurancePlan(data);
       console.log("AIHub: Service call successful, setting result");
       setResult(design);
+
+      // Update user count
+      onUpdateUser({
+        ...currentUser,
+        insuranceDesignCount: (currentUser.insuranceDesignCount || 0) + 1
+      });
     } catch (err: any) {
       console.error("AIHub: Error during analysis:", err);
       if (err.message?.includes("AUTH_REQUIRED")) {

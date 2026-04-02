@@ -16,7 +16,7 @@ import GoldenKeywordWriting from './views/GoldenKeywordWriting';
 import PublicFormView from './views/PublicFormView';
 import Login from './views/Login';
 import Signup from './views/Signup';
-import { User, UserRole, MembershipGrade, SubscriptionStatus, DashboardData, SystemSettings, Lead, LeadStatus, AppNotification, CalendarEvent } from './types';
+import { User, UserRole, MembershipGrade, SubscriptionStatus, DashboardData, SystemSettings, Lead, LeadStatus, AppNotification, CalendarEvent, LoginLog } from './types';
 import { supabase, supabaseUrl, supabaseAnonKey } from './src/lib/supabase';
 import { createClient } from '@supabase/supabase-js';
 
@@ -132,6 +132,7 @@ const App: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<DashboardData>(INITIAL_DASHBOARD_DATA);
   const [systemSettings, setSystemSettings] = useState<SystemSettings>(INITIAL_SYSTEM_SETTINGS);
   const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
+  const [loginLogs, setLoginLogs] = useState<LoginLog[]>([]);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -197,13 +198,16 @@ const App: React.FC = () => {
         const { data: calData, error: calErr } = await supabase.from('calendar_events').select('*');
         if (calErr) console.error('[App] Supabase fetch calendar_events error:', calErr);
         
-        return { userData, leadData, settingsData, dashData, notifData, formData, landingPages, calData };
+        const { data: logData, error: logErr } = await supabase.from('login_logs').select('*').order('created_at', { ascending: false }).limit(100);
+        if (logErr) console.error('[App] Supabase fetch login_logs error:', logErr);
+        
+        return { userData, leadData, settingsData, dashData, notifData, formData, landingPages, calData, logData };
       })();
 
       let fetchedUsers: User[] = [];
 
       try {
-        const { userData, leadData, settingsData, dashData, notifData, formData, landingPages, calData }: any = await Promise.race([fetchFromSupabase, timeoutPromise]);
+        const { userData, leadData, settingsData, dashData, notifData, formData, landingPages, calData, logData }: any = await Promise.race([fetchFromSupabase, timeoutPromise]);
         
         if (userData) {
           fetchedUsers = userData.map(toCamelCase);
@@ -216,6 +220,7 @@ const App: React.FC = () => {
         if (formData) setSavedFormConfigs(formData.map(toCamelCase));
         if (landingPages) setSavedLandingPages(landingPages.map(toCamelCase));
         if (calData) setCalendarEvents(calData.map(toCamelCase));
+        if (logData) setLoginLogs(logData.map(toCamelCase));
         
         console.log('[App] Data fetch from Supabase successful');
       } catch (supaErr: any) {
@@ -306,10 +311,20 @@ const App: React.FC = () => {
       })
       .subscribe();
 
+    const logsChannel = supabase
+      .channel('public:login_logs')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'login_logs' }, (payload) => {
+        console.log('[App] Real-time log change:', payload);
+        const newLog = toCamelCase(payload.new) as LoginLog;
+        setLoginLogs(prev => [newLog, ...prev].slice(0, 100));
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(usersChannel);
       supabase.removeChannel(leadsChannel);
       supabase.removeChannel(calendarChannel);
+      supabase.removeChannel(logsChannel);
     };
   }, []);
 
@@ -391,11 +406,19 @@ const App: React.FC = () => {
     }
   }, [users, isLoading]);
 
-  // Integration Logic: Sync Dashboard Stats with Member Data
+  // Integration Logic: Sync Dashboard Stats with Real Data
   useEffect(() => {
-    // 1. Calculate Dashboard Stats from Users table data
-    const totalLeads = users.reduce((acc, curr) => acc + (curr.leadsCount || 0), 0);
-    const totalConsultations = users.reduce((acc, curr) => acc + (curr.activeConsultationsCount || 0), 0);
+    // 1. Calculate Dashboard Stats from Real Data
+    // Use actual leads length for total leads
+    const totalLeadsCount = leads.length;
+    
+    // Active consultations: leads that are not LOST or CONTRACTED
+    const activeConsultationsCount = leads.filter(l => 
+      l.status !== LeadStatus.LOST && l.status !== LeadStatus.CONTRACTED
+    ).length;
+
+    // For other counts, we still use the aggregated fields on User for now
+    // but we could also count actual log entries if we had those tables.
     const totalContentGen = users.reduce((acc, curr) => acc + (curr.contentGenCount || 0), 0);
     const totalInsuranceDesign = users.reduce((acc, curr) => acc + (curr.insuranceDesignCount || 0), 0);
     const totalGoldenSystem = users.reduce((acc, curr) => acc + (curr.goldenSystemCount || 0), 0);
@@ -404,14 +427,14 @@ const App: React.FC = () => {
       ...prev,
       stats: {
         ...prev.stats,
-        totalLeads: totalLeads.toLocaleString(),
-        activeConsultations: totalConsultations.toString(),
+        totalLeads: totalLeadsCount.toLocaleString(),
+        activeConsultations: activeConsultationsCount.toString(),
         contentGenCount: totalContentGen.toLocaleString(),
         insuranceDesignCount: totalInsuranceDesign.toLocaleString(),
         goldenSystemCount: totalGoldenSystem.toLocaleString(),
       }
     }));
-  }, [users]);
+  }, [users, leads]);
 
   useEffect(() => {
     if (currentUser) {
@@ -427,6 +450,25 @@ const App: React.FC = () => {
       sessionStorage.removeItem('sil_current_user');
     }
   }, [currentUser, users]);
+
+  const recordLoginLog = async (user: User) => {
+    try {
+      const newLog: LoginLog = {
+        id: generateUUID(),
+        userId: user.id,
+        userName: user.name,
+        loginId: user.loginId,
+        userAgent: navigator.userAgent,
+        createdAt: new Date().toISOString()
+      };
+      
+      const { error } = await supabase.from('login_logs').insert(toSnakeCase(newLog));
+      if (error) console.error('[App] Failed to record login log:', error);
+      else setLoginLogs(prev => [newLog, ...prev].slice(0, 100));
+    } catch (e) {
+      console.error('[App] Error recording login log:', e);
+    }
+  };
 
   const handleLogin = async (id: string, pw: string) => {
     console.log('Login attempt started for:', id);
@@ -460,6 +502,7 @@ const App: React.FC = () => {
           return { success: false, message: '비활성화된 계정입니다. 관리자에게 문의하세요.' };
         }
         setCurrentUser(dbUser);
+        recordLoginLog(dbUser);
         return { success: true };
       }
 
@@ -474,7 +517,9 @@ const App: React.FC = () => {
           isActive: true,
           createdAt: new Date().toISOString()
         };
-        setCurrentUser(adminInfo as User);
+        const user = adminInfo as User;
+        setCurrentUser(user);
+        recordLoginLog(user);
         return { success: true };
       }
 
@@ -1032,7 +1077,7 @@ const App: React.FC = () => {
       );
       case 'member-management': return <MemberManagement users={users} onUpdateUser={updateUser} onDeleteUser={deleteUser} onDeleteUsers={deleteUsers} onAddUser={handleSignup} onRefresh={fetchAllData} />;
       case 'secret-room': return <SecretRoom user={currentUser} systemSettings={systemSettings} />;
-      case 'golden-keyword-writing': return <GoldenKeywordWriting />;
+      case 'golden-keyword-writing': return <GoldenKeywordWriting currentUser={currentUser} onUpdateUser={updateUser} />;
       case 'admin': return (
         <Admin 
           dashboardData={dashboardData} 
@@ -1047,6 +1092,8 @@ const App: React.FC = () => {
           onDeleteNotifications={deleteNotifications}
           onResetDatabase={resetDatabase}
           onRefresh={fetchAllData}
+          loginLogs={loginLogs}
+          leads={leads}
         />
       );
       default: return <Dashboard data={dashboardData} users={users} currentUser={currentUser} leads={leads} notifications={notifications} calendarEvents={calendarEvents} />;

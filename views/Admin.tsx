@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
-import { DashboardData, ChartDataPoint, SystemSettings, User, UserRole, AppNotification } from '../types';
-import { Send, Trash2, Users as UsersIcon, User as UserIcon, Bell, Activity, Upload, Package, FileArchive, Download } from 'lucide-react';
+import { DashboardData, ChartDataPoint, SystemSettings, User, UserRole, AppNotification, LoginLog, Lead } from '../types';
+import { Send, Trash2, Users as UsersIcon, User as UserIcon, Bell, Activity, Upload, Package, FileArchive, Download, History, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 import { supabase } from '../src/lib/supabase';
 
 interface AdminProps {
@@ -17,6 +17,8 @@ interface AdminProps {
   onDeleteNotifications: (ids: string[]) => void;
   onResetDatabase: () => void;
   onRefresh: () => void;
+  loginLogs: LoginLog[];
+  leads: Lead[];
 }
 
 const Admin: React.FC<AdminProps> = ({ 
@@ -31,7 +33,9 @@ const Admin: React.FC<AdminProps> = ({
   onDeleteNotification,
   onDeleteNotifications,
   onResetDatabase,
-  onRefresh
+  onRefresh,
+  loginLogs,
+  leads
 }) => {
   const [editStats, setEditStats] = useState(dashboardData.stats);
   const [editChart, setEditChart] = useState(dashboardData.chartData);
@@ -75,12 +79,17 @@ const Admin: React.FC<AdminProps> = ({
   const partners = useMemo(() => {
     return users
       .filter(u => u.role === UserRole.PARTNER)
+      .map(u => {
+        // Calculate real lead count for each partner
+        const realLeadsCount = leads.filter(l => l.userId === u.id).length;
+        return { ...u, realLeadsCount };
+      })
       .sort((a, b) => {
         const dateA = new Date(a.createdAt || 0).getTime();
         const dateB = new Date(b.createdAt || 0).getTime();
         return dateB - dateA;
       });
-  }, [users]);
+  }, [users, leads]);
 
   const handleSendNotification = (e: React.FormEvent) => {
     e.preventDefault();
@@ -549,6 +558,65 @@ const Admin: React.FC<AdminProps> = ({
       <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b bg-gray-50/50 flex justify-between items-center">
           <div className="flex items-center gap-2">
+            <History className="w-5 h-5 text-[#002D62]" />
+            <h3 className="font-bold text-gray-800">회원 접속 로그</h3>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">최근 100건</span>
+            <button 
+              onClick={onRefresh}
+              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              title="새로고침"
+            >
+              <RefreshCw className="w-4 h-4 text-gray-400" />
+            </button>
+          </div>
+        </div>
+        <div className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-gray-50 text-gray-500 text-[10px] uppercase tracking-wider">
+                <tr>
+                  <th className="px-6 py-3 font-bold">일시</th>
+                  <th className="px-6 py-3 font-bold">회원명</th>
+                  <th className="px-6 py-3 font-bold">아이디</th>
+                  <th className="px-6 py-3 font-bold">브라우저 정보</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {loginLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-12 text-center text-gray-400 text-xs">
+                      기록된 접속 로그가 없습니다.
+                    </td>
+                  </tr>
+                ) : (
+                  loginLogs.map((log) => (
+                    <tr key={log.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-3 text-[11px] font-mono text-gray-500">
+                        {new Date(log.createdAt).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-3 font-bold text-gray-700">
+                        {log.userName}
+                      </td>
+                      <td className="px-6 py-3 text-gray-500">
+                        {log.loginId}
+                      </td>
+                      <td className="px-6 py-3 text-[10px] text-gray-400 max-w-xs truncate" title={log.userAgent}>
+                        {log.userAgent}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b bg-gray-50/50 flex justify-between items-center">
+          <div className="flex items-center gap-2">
             <Package className="w-5 h-5 text-[#002D62]" />
             <h3 className="font-bold text-gray-800">Golden System 도구 관리</h3>
           </div>
@@ -612,83 +680,113 @@ const Admin: React.FC<AdminProps> = ({
 
       <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b bg-gray-50/50 flex justify-between items-center">
-          <h3 className="font-bold text-gray-800">대시보드 데이터 관리</h3>
-          <button 
-            onClick={handleSaveDashboard}
-            className="px-4 py-2 bg-[#002D62] text-white text-xs font-bold rounded-lg hover:bg-[#001A3A] transition-colors"
-          >
-            변경사항 저장
-          </button>
+          <div className="flex items-center gap-2">
+            <Activity className="w-5 h-5 text-[#002D62]" />
+            <h3 className="font-bold text-gray-800">대시보드 데이터 관리 (실데이터 연동)</h3>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-100">
+              <CheckCircle2 className="w-3 h-3" />
+              실시간 동기화 중
+            </span>
+            <button 
+              onClick={handleSaveDashboard}
+              className="px-4 py-2 bg-[#002D62] text-white text-xs font-bold rounded-lg hover:bg-[#001A3A] transition-colors"
+            >
+              추세/차트 저장
+            </button>
+          </div>
         </div>
         <div className="p-6 space-y-8">
           {/* Stats Editing - Now Derived from Members */}
           <div>
-            <h4 className="text-sm font-bold text-gray-700 mb-4 flex items-center">
-              <span className="w-1 h-4 bg-[#002D62] rounded-full mr-2"></span>
-              회원별 실적 데이터 입력 (대시보드 자동 연동)
-            </h4>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-sm font-bold text-gray-700 flex items-center">
+                <span className="w-1 h-4 bg-[#002D62] rounded-full mr-2"></span>
+                회원별 실적 데이터 (대시보드 자동 합산)
+              </h4>
+              <p className="text-[10px] text-gray-400 font-medium">
+                * 가망고객 및 활성상담은 DB에서 실시간으로 계산됩니다.
+              </p>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
-                <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+                <thead className="bg-gray-50 text-gray-500 text-[10px] uppercase tracking-wider">
                   <tr>
                     <th className="px-4 py-3 font-bold">파트너명</th>
                     <th className="px-4 py-3 font-bold">콘텐츠 생성</th>
                     <th className="px-4 py-3 font-bold">보험설계</th>
                     <th className="px-4 py-3 font-bold">Golden System</th>
-                    <th className="px-4 py-3 font-bold">가망고객</th>
-                    <th className="px-4 py-3 font-bold">활성상담</th>
+                    <th className="px-4 py-3 font-bold text-blue-600">가망고객 (실데이터)</th>
+                    <th className="px-4 py-3 font-bold text-blue-600">활성상담 (실데이터)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {partners.map((u) => (
-                    <tr key={u.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{u.name} <span className="text-[10px] text-gray-400 font-normal">@{u.loginId}</span></td>
-                      <td className="px-4 py-3">
-                        <input 
-                          type="number" 
-                          value={u.contentGenCount || 0}
-                          onChange={(e) => handleUpdateMemberPerformance(u.id, 'contentGenCount', e.target.value)}
-                          className="w-full p-1.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-xs"
-                        />
-                      </td>
-                      <td className="px-4 py-3">
-                        <input 
-                          type="number" 
-                          value={u.insuranceDesignCount || 0}
-                          onChange={(e) => handleUpdateMemberPerformance(u.id, 'insuranceDesignCount', e.target.value)}
-                          className="w-full p-1.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-xs"
-                        />
-                      </td>
-                      <td className="px-4 py-3">
-                        <input 
-                          type="number" 
-                          value={u.goldenSystemCount || 0}
-                          onChange={(e) => handleUpdateMemberPerformance(u.id, 'goldenSystemCount', e.target.value)}
-                          className="w-full p-1.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-xs"
-                        />
-                      </td>
-                      <td className="px-4 py-3">
-                        <input 
-                          type="number" 
-                          value={u.leadsCount || 0}
-                          onChange={(e) => handleUpdateMemberPerformance(u.id, 'leadsCount', e.target.value)}
-                          className="w-full p-1.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-xs"
-                        />
-                      </td>
-                      <td className="px-4 py-3">
-                        <input 
-                          type="number" 
-                          value={u.activeConsultationsCount || 0}
-                          onChange={(e) => handleUpdateMemberPerformance(u.id, 'activeConsultationsCount', e.target.value)}
-                          className="w-full p-1.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-xs"
-                        />
-                      </td>
-                    </tr>
-                  ))}
+                  {partners.map((u) => {
+                    const realLeads = leads.filter(l => l.userId === u.id);
+                    const realActiveConsultations = realLeads.filter(l => 
+                      l.status !== 'LOST' && l.status !== 'CONTRACTED'
+                    ).length;
+
+                    return (
+                      <tr key={u.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 font-medium text-gray-900">
+                          {u.name} 
+                          <span className="block text-[9px] text-gray-400 font-normal mt-0.5">@{u.loginId}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <input 
+                            type="number" 
+                            value={u.contentGenCount || 0}
+                            onChange={(e) => handleUpdateMemberPerformance(u.id, 'contentGenCount', e.target.value)}
+                            className="w-full p-1.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-xs bg-white"
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <input 
+                            type="number" 
+                            value={u.insuranceDesignCount || 0}
+                            onChange={(e) => handleUpdateMemberPerformance(u.id, 'insuranceDesignCount', e.target.value)}
+                            className="w-full p-1.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-xs bg-white"
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <input 
+                            type="number" 
+                            value={u.goldenSystemCount || 0}
+                            onChange={(e) => handleUpdateMemberPerformance(u.id, 'goldenSystemCount', e.target.value)}
+                            className="w-full p-1.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-xs bg-white"
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-100 min-w-[40px] text-center">
+                              {realLeads.length}
+                            </span>
+                            <span className="text-[9px] text-gray-400">건</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-100 min-w-[40px] text-center">
+                              {realActiveConsultations}
+                            </span>
+                            <span className="text-[9px] text-gray-400">건</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
-            <p className="mt-4 text-[10px] text-gray-400 italic">* 위 표에서 입력한 데이터의 합계가 대시보드의 주요 지표에 실시간으로 반영됩니다.</p>
+            <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100 flex items-start gap-3">
+              <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5" />
+              <p className="text-[10px] text-blue-700 leading-relaxed">
+                <strong>데이터 연동 안내:</strong> 가망고객 및 활성상담 데이터는 CRM 메뉴에서 등록된 실제 데이터와 실시간으로 연동됩니다. 
+                콘텐츠 생성, 보험설계, Golden System 실적은 파트너별로 직접 입력하여 관리할 수 있으며, 이 모든 데이터의 합계가 대시보드 메인 지표에 반영됩니다.
+              </p>
+            </div>
           </div>
 
           {/* Trend Editing */}
