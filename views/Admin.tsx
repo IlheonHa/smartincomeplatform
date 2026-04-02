@@ -18,6 +18,7 @@ interface AdminProps {
   onResetDatabase: () => void;
   onRefresh: () => void;
   loginLogs: LoginLog[];
+  onDeleteLoginLogs: (ids: string[]) => void;
   leads: Lead[];
 }
 
@@ -35,6 +36,7 @@ const Admin: React.FC<AdminProps> = ({
   onResetDatabase,
   onRefresh,
   loginLogs,
+  onDeleteLoginLogs,
   leads
 }) => {
   const [editStats, setEditStats] = useState(dashboardData.stats);
@@ -46,8 +48,30 @@ const Admin: React.FC<AdminProps> = ({
   const [notifType, setNotifType] = useState<'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR'>('INFO');
   const [notifTarget, setNotifTarget] = useState<'ALL' | string>('ALL');
   const [selectedNotifs, setSelectedNotifs] = useState<string[]>([]);
+  const [selectedLogs, setSelectedLogs] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [supabaseStatus, setSupabaseStatus] = useState<{ status: 'checking' | 'connected' | 'error', message?: string }>({ status: 'checking' });
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'ALERT' | 'CONFIRM';
+    onConfirm?: () => void;
+    status?: 'SUCCESS' | 'ERROR' | 'INFO' | 'WARNING';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'ALERT'
+  });
+
+  const showAlert = (title: string, message: string, status: 'SUCCESS' | 'ERROR' | 'INFO' | 'WARNING' = 'INFO') => {
+    setModal({ isOpen: true, title, message, type: 'ALERT', status });
+  };
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setModal({ isOpen: true, title, message, type: 'CONFIRM', onConfirm });
+  };
 
   // Check Supabase connection on mount
   React.useEffect(() => {
@@ -107,15 +131,31 @@ const Admin: React.FC<AdminProps> = ({
 
     setNotifTitle('');
     setNotifMessage('');
-    alert('알림이 전송되었습니다.');
+    showAlert('성공', '알림이 전송되었습니다.', 'SUCCESS');
   };
 
   const handleBatchDeleteNotifs = () => {
     if (selectedNotifs.length === 0) return;
-    if (confirm(`선택한 ${selectedNotifs.length}개의 알림을 삭제하시겠습니까?`)) {
-      onDeleteNotifications(selectedNotifs);
-      setSelectedNotifs([]);
-    }
+    showConfirm(
+      '알림 삭제',
+      `선택한 ${selectedNotifs.length}개의 알림을 삭제하시겠습니까?`,
+      () => {
+        onDeleteNotifications(selectedNotifs);
+        setSelectedNotifs([]);
+      }
+    );
+  };
+
+  const handleBatchDeleteLogs = () => {
+    if (selectedLogs.length === 0) return;
+    showConfirm(
+      '접속 로그 삭제',
+      `선택한 ${selectedLogs.length}개의 접속 로그를 삭제하시겠습니까?`,
+      () => {
+        onDeleteLoginLogs(selectedLogs);
+        setSelectedLogs([]);
+      }
+    );
   };
 
   const toggleNotifSelection = (id: string) => {
@@ -132,6 +172,20 @@ const Admin: React.FC<AdminProps> = ({
     }
   };
 
+  const toggleLogSelection = (id: string) => {
+    setSelectedLogs(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleAllLogs = () => {
+    if (selectedLogs.length === loginLogs.length) {
+      setSelectedLogs([]);
+    } else {
+      setSelectedLogs(loginLogs.map(l => l.id));
+    }
+  };
+
   const handleUpdateMemberPerformance = (userId: string, field: keyof User, value: string) => {
     const user = users.find(u => u.id === userId);
     if (user) {
@@ -145,7 +199,7 @@ const Admin: React.FC<AdminProps> = ({
       stats: editStats,
       chartData: editChart
     });
-    alert('대시보드 데이터가 성공적으로 저장되었습니다.');
+    showAlert('성공', '대시보드 데이터가 성공적으로 저장되었습니다.', 'SUCCESS');
   };
 
   const handleToggleSetting = (key: keyof SystemSettings) => {
@@ -252,13 +306,13 @@ const Admin: React.FC<AdminProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       if (!file.name.endsWith('.zip')) {
-        alert('ZIP 파일만 업로드 가능합니다.');
+        showAlert('오류', 'ZIP 파일만 업로드 가능합니다.', 'ERROR');
         return;
       }
 
       // Limit size to 50MB
       if (file.size > 50 * 1024 * 1024) {
-        alert('파일 크기가 너무 큽니다. 50MB 이하의 ZIP 파일만 업로드 가능합니다.');
+        showAlert('오류', '파일 크기가 너무 큽니다. 50MB 이하의 ZIP 파일만 업로드 가능합니다.', 'ERROR');
         return;
       }
       
@@ -309,14 +363,14 @@ const Admin: React.FC<AdminProps> = ({
         });
         
         if (result?.success) {
-          alert('Naver Blog 자동이웃신청 도구가 성공적으로 업로드되었습니다.');
+          showAlert('성공', 'Naver Blog 자동이웃신청 도구가 성공적으로 업로드되었습니다.', 'SUCCESS');
         } else {
           console.error('Database Update Error:', result?.error);
-          alert('업로드에 성공했으나 설정 저장에 실패했습니다. 관리자에게 문의하세요.');
+          showAlert('오류', '업로드에 성공했으나 설정 저장에 실패했습니다. 관리자에게 문의하세요.', 'ERROR');
         }
       } catch (err: any) {
         console.error('Upload process error:', err);
-        alert(`업로드 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'}\n\nSupabase Storage 설정(버킷 생성 및 권한)을 확인해주세요.`);
+        showAlert('오류', `업로드 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'}`, 'ERROR');
       } finally {
         setIsUploading(false);
         e.target.value = '';
@@ -563,6 +617,15 @@ const Admin: React.FC<AdminProps> = ({
           </div>
           <div className="flex items-center gap-4">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">최근 100건</span>
+            {selectedLogs.length > 0 && (
+              <button 
+                onClick={handleBatchDeleteLogs}
+                className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 text-[10px] font-bold rounded-lg hover:bg-red-100 transition-colors border border-red-100"
+              >
+                <Trash2 className="w-3 h-3" />
+                {selectedLogs.length}개 삭제
+              </button>
+            )}
             <button 
               onClick={onRefresh}
               className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
@@ -577,6 +640,14 @@ const Admin: React.FC<AdminProps> = ({
             <table className="w-full text-sm text-left">
               <thead className="bg-gray-50 text-gray-500 text-[10px] uppercase tracking-wider">
                 <tr>
+                  <th className="px-6 py-3 font-bold w-10">
+                    <input 
+                      type="checkbox" 
+                      checked={loginLogs.length > 0 && selectedLogs.length === loginLogs.length}
+                      onChange={toggleAllLogs}
+                      className="rounded border-gray-300 text-[#002D62] focus:ring-[#002D62]"
+                    />
+                  </th>
                   <th className="px-6 py-3 font-bold">일시</th>
                   <th className="px-6 py-3 font-bold">회원명</th>
                   <th className="px-6 py-3 font-bold">아이디</th>
@@ -586,13 +657,21 @@ const Admin: React.FC<AdminProps> = ({
               <tbody className="divide-y">
                 {loginLogs.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center text-gray-400 text-xs">
+                    <td colSpan={5} className="px-6 py-12 text-center text-gray-400 text-xs">
                       기록된 접속 로그가 없습니다.
                     </td>
                   </tr>
                 ) : (
                   loginLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50/50 transition-colors">
+                    <tr key={log.id} className={`hover:bg-gray-50/50 transition-colors ${selectedLogs.includes(log.id) ? 'bg-blue-50/30' : ''}`}>
+                      <td className="px-6 py-3">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedLogs.includes(log.id)}
+                          onChange={() => toggleLogSelection(log.id)}
+                          className="rounded border-gray-300 text-[#002D62] focus:ring-[#002D62]"
+                        />
+                      </td>
                       <td className="px-6 py-3 text-[11px] font-mono text-gray-500">
                         {new Date(log.createdAt).toLocaleString()}
                       </td>
@@ -930,13 +1009,77 @@ const Admin: React.FC<AdminProps> = ({
             </p>
           </div>
           <button 
-            onClick={onResetDatabase}
+            onClick={() => showConfirm(
+              '시스템 초기화',
+              '관리자를 제외한 모든 데이터를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+              onResetDatabase
+            )}
             className="px-8 py-4 bg-red-600 text-white font-black rounded-xl hover:bg-red-700 transition-all shadow-lg shadow-red-200 active:scale-95"
           >
             전체 데이터 리셋 실행
           </button>
         </div>
       </div>
+      
+      {/* Custom Modal */}
+      {modal.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden animate-slideUp border border-slate-100">
+            <div className={`p-8 text-center ${
+              modal.status === 'ERROR' ? 'bg-red-50' : 
+              modal.status === 'SUCCESS' ? 'bg-green-50' : 
+              modal.status === 'WARNING' ? 'bg-amber-50' : 'bg-blue-50'
+            }`}>
+              <div className="flex justify-center mb-4">
+                {modal.status === 'ERROR' ? <AlertCircle className="w-12 h-12 text-red-500" /> :
+                 modal.status === 'SUCCESS' ? <CheckCircle2 className="w-12 h-12 text-green-500" /> :
+                 modal.status === 'WARNING' ? <AlertCircle className="w-12 h-12 text-amber-500" /> :
+                 <Activity className="w-12 h-12 text-blue-500" />}
+              </div>
+              <h3 className={`text-xl font-black tracking-tight ${
+                modal.status === 'ERROR' ? 'text-red-900' : 
+                modal.status === 'SUCCESS' ? 'text-green-900' : 
+                modal.status === 'WARNING' ? 'text-amber-900' : 'text-blue-900'
+              }`}>
+                {modal.title}
+              </h3>
+            </div>
+            <div className="p-8 text-center space-y-6">
+              <p className="text-slate-600 font-bold text-sm leading-relaxed whitespace-pre-line">
+                {modal.message}
+              </p>
+              <div className="flex gap-3">
+                {modal.type === 'CONFIRM' ? (
+                  <>
+                    <button 
+                      onClick={() => setModal(prev => ({ ...prev, isOpen: false }))}
+                      className="flex-1 px-6 py-3 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-200 transition-all"
+                    >
+                      취소
+                    </button>
+                    <button 
+                      onClick={() => {
+                        modal.onConfirm?.();
+                        setModal(prev => ({ ...prev, isOpen: false }));
+                      }}
+                      className="flex-1 px-6 py-3 bg-[#002D62] text-white text-xs font-bold rounded-xl hover:bg-[#001A3A] transition-all shadow-lg shadow-blue-100"
+                    >
+                      확인
+                    </button>
+                  </>
+                ) : (
+                  <button 
+                    onClick={() => setModal(prev => ({ ...prev, isOpen: false }))}
+                    className="w-full px-6 py-3 bg-[#002D62] text-white text-xs font-bold rounded-xl hover:bg-[#001A3A] transition-all shadow-lg shadow-blue-100"
+                  >
+                    확인
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -198,7 +198,14 @@ const App: React.FC = () => {
         const { data: calData, error: calErr } = await supabase.from('calendar_events').select('*');
         if (calErr) console.error('[App] Supabase fetch calendar_events error:', calErr);
         
-        const { data: logData, error: logErr } = await supabase.from('login_logs').select('*').order('created_at', { ascending: false }).limit(100);
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const { data: logData, error: logErr } = await supabase
+          .from('login_logs')
+          .select('*')
+          .gte('created_at', sevenDaysAgo.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(100);
         if (logErr) console.error('[App] Supabase fetch login_logs error:', logErr);
         
         return { userData, leadData, settingsData, dashData, notifData, formData, landingPages, calData, logData };
@@ -908,10 +915,18 @@ const App: React.FC = () => {
     }
   };
 
+  const deleteLoginLogs = async (ids: string[]) => {
+    const { error } = await supabase.from('login_logs').delete().in('id', ids);
+    if (!error) {
+      setLoginLogs(prev => prev.filter(l => !ids.includes(l.id)));
+    } else {
+      console.error('[App] Failed to delete login logs:', error);
+      alert('로그 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
   // Database Reset Handler
   const resetDatabase = async () => {
-    if (!confirm('관리자를 제외한 모든 데이터를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
-    
     setIsLoading(true);
     try {
       console.log('[App] Starting database reset...');
@@ -1123,6 +1138,7 @@ const App: React.FC = () => {
           onResetDatabase={resetDatabase}
           onRefresh={() => fetchAllData(true)}
           loginLogs={loginLogs}
+          onDeleteLoginLogs={deleteLoginLogs}
           leads={leads}
         />
       );
