@@ -477,12 +477,11 @@ const App: React.FC = () => {
   -- RLS Policies (Allow admins to read all, users to insert their own)
   ALTER TABLE login_logs ENABLE ROW LEVEL SECURITY;
   CREATE POLICY "Allow insert for all" ON login_logs FOR INSERT WITH CHECK (true);
-  CREATE POLICY "Allow read for admins" ON login_logs FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM users 
-      WHERE users.id = auth.uid() AND users.role = 'ADMIN'
-    )
-  );
+  
+  -- NOTE: If not using Supabase Auth, auth.uid() will be null. 
+  -- For demo purposes, we allow all authenticated-like users to read logs, 
+  -- or you can restrict it to a specific admin check if using Supabase Auth.
+  CREATE POLICY "Allow read for all" ON login_logs FOR SELECT USING (true);
   */
   const recordLoginLog = async (user: User) => {
     try {
@@ -1106,7 +1105,7 @@ const App: React.FC = () => {
           setSystemSettings={updateSystemSettings}
         />
       );
-      case 'member-management': return <MemberManagement users={users} onUpdateUser={updateUser} onDeleteUser={deleteUser} onDeleteUsers={deleteUsers} onAddUser={handleSignup} onRefresh={fetchAllData} />;
+      case 'member-management': return <MemberManagement users={users} onUpdateUser={updateUser} onDeleteUser={deleteUser} onDeleteUsers={deleteUsers} onAddUser={handleSignup} onRefresh={() => fetchAllData(true)} />;
       case 'secret-room': return <SecretRoom user={currentUser} systemSettings={systemSettings} />;
       case 'golden-keyword-writing': return <GoldenKeywordWriting currentUser={currentUser} onUpdateUser={updateUser} />;
       case 'admin': return (
@@ -1122,7 +1121,7 @@ const App: React.FC = () => {
           onDeleteNotification={deleteNotification}
           onDeleteNotifications={deleteNotifications}
           onResetDatabase={resetDatabase}
-          onRefresh={fetchAllData}
+          onRefresh={() => fetchAllData(true)}
           loginLogs={loginLogs}
           leads={leads}
         />
