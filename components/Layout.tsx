@@ -50,7 +50,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
     { id: 'dashboard', label: '대시보드', icon: LayoutDashboard },
     { id: 'secret-room', label: 'Golden System', icon: Crown },
     { id: 'marketing', label: 'AI 수익형 콘텐츠 생성', icon: Rocket },
-    { id: 'lead-collection', label: '가망고객 수집', icon: Magnet },
+    { id: 'lead-collection', label: '프리미엄홈페이지(DB수집)', icon: Magnet },
     { id: 'crm', label: '가망고객 관리(CRM)', icon: Users },
     { id: 'ai-hub', label: 'AI 보험설계 솔루션', icon: Bot },
     { id: 'useful-tools', label: '유용한 기능', icon: Wrench },

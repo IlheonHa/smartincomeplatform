@@ -45,6 +45,17 @@
   .btn-accent {
     @apply px-6 py-3 bg-accent text-white font-bold rounded-2xl shadow-lg shadow-accent/20 hover:bg-accent-light hover:shadow-accent/30 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2;
   }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+  }
 }
 
 @keyframes fadeIn {

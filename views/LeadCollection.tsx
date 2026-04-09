@@ -28,13 +28,14 @@ import {
   ShieldCheck,
   Clock,
   Save,
+  Upload,
+  Check,
   History,
   ExternalLink,
   Search,
   Filter,
   Download,
   MoreHorizontal,
-  Check,
   X,
   AlertCircle,
   BarChart3,
@@ -45,6 +46,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { User, UserRole, Lead, LeadStatus } from '../types';
+import { supabase } from '../src/lib/supabase';
 import { 
   getGeminiKey, 
   getOpenAIKey, 
@@ -451,11 +453,56 @@ const SmartFormBuilder: React.FC<{
   onReset?: () => void;
 }> = ({ currentUser, onSaveConfig, onSubmitResponse, savedFormConfigs, onDeleteFormConfig, initialConfig, onReset }) => {
   const [formName, setFormName] = useState('기본 상담 신청서');
+  const [formStyle, setFormStyle] = useState<'SIMPLE' | 'PREMIUM'>('SIMPLE');
   const [fields, setFields] = useState([
     { id: '1', label: '성함', type: 'text', required: true },
     { id: '2', label: '연락처', type: 'tel', required: true },
     { id: '3', label: '문의내용', type: 'text', required: false },
   ]);
+
+  // Premium Page State
+  const [hero, setHero] = useState({
+    headline: 'AI가 분석하고 전문가가 설계하는 스마트한 보험',
+    subheadline: '복잡한 보험도 데이터 기반 분석과 맞춤 설계로 더 명확하고 더 합리적으로.',
+    cta: '상담 문의하기',
+    backgroundImage: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&q=80&w=1920'
+  });
+
+  const [intro, setIntro] = useState({
+    profileImage: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=800',
+    name: currentUser.name,
+    title: '스마트 보험 전문 설계사',
+    greeting: '안녕하세요, 데이터로 증명하고 진심으로 설계하는 전문가입니다.',
+    description: '단순히 보험을 판매하는 것이 아니라, 고객님의 인생 전반을 아우르는 리스크 매니지먼트를 지향합니다. AI 분석을 통한 객관적인 진단과 10년 이상의 실무 경험을 결합하여 최적의 솔루션을 제안해 드립니다.',
+    specialties: ['보험 리뉴얼', '보장 분석', '맞춤 설계', '가족 보장', '사업자 보험'],
+    philosophy: '보험은 지출이 아니라 미래를 위한 가장 똑똑한 전략이어야 합니다.'
+  });
+
+  const [story, setStory] = useState({
+    title: '왜 스마트 보험설계인가?',
+    content: '보험 시장은 정보의 비대칭이 심한 곳입니다. 우리는 AI 기술을 활용하여 고객이 알기 어려운 보장의 중복과 누락을 투명하게 분석합니다. 기술은 도구일 뿐, 마지막 완성은 고객의 삶을 깊이 이해하는 전문가의 손길에서 이루어집니다.',
+    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1200'
+  });
+
+  const [portfolio, setPortfolio] = useState([
+    { id: '1', title: '4인 가족 보험 리뉴얼', summary: '기존 보험료 30% 절감 및 보장 범위 2배 확대', category: '가족', image: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&q=80&w=800' },
+    { id: '2', title: '사업자 리스크 컨설팅', summary: '화재 및 배상책임 보험 최적화 설계', category: '사업자', image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=800' },
+    { id: '3', title: '1인 가구 맞춤 보장', summary: '가성비 중심의 실손 및 암보험 재구성', category: '개인', image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=800' }
+  ]);
+
+  const [reviews, setReviews] = useState([
+    { id: '1', name: '김*현 고객님', text: 'AI 분석 보고서를 보고 제 보험이 얼마나 엉망이었는지 알게 됐어요. 덕분에 정말 필요한 보장만 챙겼습니다.', rating: 5 },
+    { id: '2', name: '이*우 고객님', text: '설계사님이 너무 전문적이시고, 강요 없이 데이터로 설명해주셔서 신뢰가 갔습니다.', rating: 5 }
+  ]);
+
+  const [footer, setFooter] = useState({
+    brandName: '스마트 보험설계',
+    contact: currentUser.phone,
+    email: currentUser.loginId + '@gmail.com',
+    address: '서울특별시 강남구 테헤란로 123, 스마트빌딩 15층',
+    sns: { blog: '#', instagram: '#', kakao: '#' }
+  });
+
   const [previewData, setPreviewData] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -469,11 +516,60 @@ const SmartFormBuilder: React.FC<{
     if (initialConfig) {
       setFormName(initialConfig.name);
       setFields(initialConfig.fields || []);
+      
+      const theme = initialConfig.theme || {};
+      setFormStyle(theme.style || 'SIMPLE');
+      if (theme.hero) setHero(theme.hero);
+      if (theme.intro) setIntro(theme.intro);
+      if (theme.story) setStory(theme.story);
+      if (theme.portfolio) setPortfolio(theme.portfolio);
+      if (theme.reviews) setReviews(theme.reviews);
+      if (theme.footer) setFooter(theme.footer);
+      
       setCurrentFormId(initialConfig.id);
       setGeneratedUrl(initialConfig.url);
       setIsEditing(true);
     }
   }, [initialConfig]);
+
+  const handleImageUpload = async (file: File, folder: string) => {
+    try {
+      // 0. Ensure bucket exists
+      try {
+        const { data: buckets } = await supabase.storage.listBuckets();
+        const exists = buckets?.some(b => b.id === 'form-assets');
+        if (!exists) {
+          await supabase.storage.createBucket('form-assets', { public: true });
+        }
+      } catch (bucketErr) {
+        console.warn('[LeadCollection] Bucket check/create failed, proceeding anyway:', bucketErr);
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const userId = currentUser?.id || 'anonymous';
+      const filePath = `${userId}/${folder}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('form-assets')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('form-assets')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (err: any) {
+      console.error('Image upload failed:', err);
+      alert(`이미지 업로드에 실패했습니다: ${err.message || '알 수 없는 오류'}`);
+      return null;
+    }
+  };
 
   const addField = () => {
     setFields([...fields, { id: Date.now().toString(), label: '새 항목', type: 'text', required: false }]);
@@ -516,6 +612,15 @@ const SmartFormBuilder: React.FC<{
         userId: currentUser.id,
         name: formName,
         fields, 
+        theme: {
+          style: formStyle,
+          hero,
+          intro,
+          story,
+          portfolio,
+          reviews,
+          footer
+        },
         url: publicUrl,
         updatedAt: new Date().toISOString() 
       };
@@ -568,15 +673,17 @@ const SmartFormBuilder: React.FC<{
     }, 1000);
   };
 
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'BASIC' | 'HERO' | 'INTRO' | 'STORY' | 'PORTFOLIO' | 'REVIEWS' | 'FOOTER'>('BASIC');
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <div className="neo-card p-8 space-y-8">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="lg:col-span-5 neo-card p-8 space-y-8 max-h-[85vh] overflow-y-auto custom-scrollbar">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <h3 className="text-xl font-bold text-slate-900 tracking-tight">
-              {isEditing ? '폼 설정 수정' : '폼 설정'}
+              {isEditing ? '프리미엄 홈페이지 수정' : '프리미엄 홈페이지 제작'}
             </h3>
-            <p className="text-xs text-slate-400 font-medium tracking-wide">폼의 이름과 필드를 구성하세요.</p>
+            <p className="text-xs text-slate-400 font-medium tracking-wide">폼의 스타일과 내용을 구성하세요.</p>
           </div>
           <div className="flex items-center gap-2">
             {isEditing && (
@@ -588,68 +695,445 @@ const SmartFormBuilder: React.FC<{
                 <Plus className="w-5 h-5" />
               </button>
             )}
-            <button onClick={addField} className="p-2.5 bg-primary/5 text-primary rounded-xl hover:bg-primary hover:text-white transition-all duration-300">
-              <Plus className="w-5 h-5" />
-            </button>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">폼 이름 (구분용)</label>
-            <input 
-              type="text" 
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
-              className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-bold text-slate-700"
-              placeholder="예: 3월 암보험 상담 신청서"
-            />
-          </div>
+        {/* Style Selector */}
+        <div className="flex p-1 bg-slate-100 rounded-2xl">
+          <button 
+            onClick={() => setFormStyle('SIMPLE')}
+            className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all ${formStyle === 'SIMPLE' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            기본 폼
+          </button>
+          <button 
+            onClick={() => setFormStyle('PREMIUM')}
+            className={`flex-1 py-3 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2 ${formStyle === 'PREMIUM' ? 'bg-gradient-to-r from-amber-400 to-amber-600 text-white shadow-lg shadow-amber-200 scale-[1.02]' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            <Sparkles className={`w-3 h-3 ${formStyle === 'PREMIUM' ? 'text-white animate-pulse' : 'text-slate-300'}`} />
+            프리미엄 홈페이지
+          </button>
         </div>
 
-        <div className="space-y-3">
-          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">필드 구성</label>
-          {fields.map((field, idx) => (
-            <motion.div 
-              layout
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              key={field.id} 
-              className="p-4 bg-white rounded-2xl border border-slate-100 flex items-center gap-4 group hover:border-primary/20 transition-all"
-            >
-              <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-xs font-bold text-slate-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
-                {idx + 1}
-              </div>
-              <input 
-                type="text" 
-                value={field.label}
-                onChange={(e) => {
-                  const newFields = [...fields];
-                  newFields[idx].label = e.target.value;
-                  setFields(newFields);
-                }}
-                className="flex-1 bg-transparent border-none outline-none font-bold text-slate-700 text-sm"
-              />
-              <select 
-                value={field.type}
-                onChange={(e) => {
-                  const newFields = [...fields];
-                  newFields[idx].type = e.target.value;
-                  setFields(newFields);
-                }}
-                className="bg-slate-50 px-3 py-1.5 rounded-lg text-[10px] font-bold text-slate-500 outline-none border border-transparent focus:border-primary/20 transition-all"
+        {formStyle === 'PREMIUM' && (
+          <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+            {['BASIC', 'HERO', 'INTRO', 'STORY', 'PORTFOLIO', 'REVIEWS', 'FOOTER'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveSettingsTab(tab as any)}
+                className={`px-4 py-2 rounded-full text-[10px] font-black whitespace-nowrap transition-all ${activeSettingsTab === tab ? 'bg-primary text-white' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
               >
-                <option value="text">텍스트</option>
-                <option value="tel">연락처</option>
-                <option value="number">숫자</option>
-                <option value="email">이메일</option>
-              </select>
-              <button onClick={() => removeField(field.id)} className="p-2 text-slate-200 hover:text-red-500 transition-colors">
-                <Trash2 className="w-4 h-4" />
+                {tab === 'BASIC' ? '기본/필드' : 
+                 tab === 'HERO' ? '히어로' : 
+                 tab === 'INTRO' ? '설계사소개' : 
+                 tab === 'STORY' ? '브랜드스토리' : 
+                 tab === 'PORTFOLIO' ? '포트폴리오' : 
+                 tab === 'REVIEWS' ? '리뷰' : '푸터'}
               </button>
-            </motion.div>
-          ))}
+            ))}
+          </div>
+        )}
+
+        <div className="space-y-6">
+          {(activeSettingsTab === 'BASIC' || formStyle === 'SIMPLE') && (
+            <>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">폼 이름 (구분용)</label>
+                  <input 
+                    type="text" 
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-bold text-slate-700"
+                    placeholder="예: 3월 암보험 상담 신청서"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between ml-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">필드 구성</label>
+                  <button onClick={addField} className="p-1.5 bg-primary/5 text-primary rounded-lg hover:bg-primary hover:text-white transition-all">
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                {fields.map((field, idx) => (
+                  <motion.div 
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    key={field.id} 
+                    className="p-4 bg-white rounded-2xl border border-slate-100 flex items-center gap-4 group hover:border-primary/20 transition-all"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-xs font-bold text-slate-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
+                      {idx + 1}
+                    </div>
+                    <input 
+                      type="text" 
+                      value={field.label}
+                      onChange={(e) => {
+                        const newFields = [...fields];
+                        newFields[idx].label = e.target.value;
+                        setFields(newFields);
+                      }}
+                      className="flex-1 bg-transparent border-none outline-none font-bold text-slate-700 text-sm"
+                    />
+                    <select 
+                      value={field.type}
+                      onChange={(e) => {
+                        const newFields = [...fields];
+                        newFields[idx].type = e.target.value;
+                        setFields(newFields);
+                      }}
+                      className="bg-slate-50 px-3 py-1.5 rounded-lg text-[10px] font-bold text-slate-500 outline-none border border-transparent focus:border-primary/20 transition-all"
+                    >
+                      <option value="text">텍스트</option>
+                      <option value="tel">연락처</option>
+                      <option value="number">숫자</option>
+                      <option value="email">이메일</option>
+                    </select>
+                    <button onClick={() => removeField(field.id)} className="p-2 text-slate-200 hover:text-red-500 transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {formStyle === 'PREMIUM' && activeSettingsTab === 'HERO' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">메인 헤드라인</label>
+                <textarea 
+                  value={hero.headline}
+                  onChange={(e) => setHero({ ...hero, headline: e.target.value })}
+                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-bold text-slate-700 h-24 resize-none"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">서브 헤드라인</label>
+                <textarea 
+                  value={hero.subheadline}
+                  onChange={(e) => setHero({ ...hero, subheadline: e.target.value })}
+                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-medium text-slate-600 h-24 resize-none"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">버튼 문구</label>
+                <input 
+                  type="text" 
+                  value={hero.cta}
+                  onChange={(e) => setHero({ ...hero, cta: e.target.value })}
+                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-bold text-slate-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">배경 이미지</label>
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 rounded-xl bg-slate-100 overflow-hidden border border-slate-200">
+                    <img src={hero.backgroundImage} alt="Hero" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  </div>
+                  <input 
+                    type="file" 
+                    id="hero-bg-upload" 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const url = await handleImageUpload(file, 'hero');
+                        if (url) setHero({ ...hero, backgroundImage: url });
+                      }
+                    }}
+                  />
+                  <label htmlFor="hero-bg-upload" className="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg cursor-pointer hover:bg-black transition-all">
+                    이미지 변경
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {formStyle === 'PREMIUM' && activeSettingsTab === 'INTRO' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+              <div className="flex items-center gap-6">
+                <div className="relative group">
+                  <div className="w-24 h-24 rounded-2xl bg-slate-100 overflow-hidden border border-slate-200 shadow-sm">
+                    <img src={intro.profileImage} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  </div>
+                  <input 
+                    type="file" 
+                    id="profile-upload" 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const url = await handleImageUpload(file, 'intro');
+                        if (url) setIntro({ ...intro, profileImage: url });
+                      }
+                    }}
+                  />
+                  <label htmlFor="profile-upload" className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center shadow-lg cursor-pointer hover:scale-110 transition-all">
+                    <Upload className="w-4 h-4" />
+                  </label>
+                </div>
+                <div className="flex-1 space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">이름</label>
+                    <input 
+                      type="text" 
+                      value={intro.name}
+                      onChange={(e) => setIntro({ ...intro, name: e.target.value })}
+                      className="w-full p-2 bg-slate-50 border-b border-slate-200 outline-none font-bold text-slate-700 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">직함/역할</label>
+                    <input 
+                      type="text" 
+                      value={intro.title}
+                      onChange={(e) => setIntro({ ...intro, title: e.target.value })}
+                      className="w-full p-2 bg-slate-50 border-b border-slate-200 outline-none font-bold text-slate-700 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">한 줄 인사말</label>
+                <input 
+                  type="text" 
+                  value={intro.greeting}
+                  onChange={(e) => setIntro({ ...intro, greeting: e.target.value })}
+                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-bold text-slate-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">상세 소개</label>
+                <textarea 
+                  value={intro.description}
+                  onChange={(e) => setIntro({ ...intro, description: e.target.value })}
+                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-medium text-slate-600 h-32 resize-none"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">상담 철학</label>
+                <input 
+                  type="text" 
+                  value={intro.philosophy}
+                  onChange={(e) => setIntro({ ...intro, philosophy: e.target.value })}
+                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-bold text-slate-700"
+                />
+              </div>
+            </div>
+          )}
+
+          {formStyle === 'PREMIUM' && activeSettingsTab === 'STORY' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">스토리 제목</label>
+                <input 
+                  type="text" 
+                  value={story.title}
+                  onChange={(e) => setStory({ ...story, title: e.target.value })}
+                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-bold text-slate-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">스토리 내용</label>
+                <textarea 
+                  value={story.content}
+                  onChange={(e) => setStory({ ...story, content: e.target.value })}
+                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-medium text-slate-600 h-40 resize-none"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">스토리 이미지</label>
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 rounded-xl bg-slate-100 overflow-hidden border border-slate-200">
+                    <img src={story.image} alt="Story" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  </div>
+                  <input 
+                    type="file" 
+                    id="story-upload" 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const url = await handleImageUpload(file, 'story');
+                        if (url) setStory({ ...story, image: url });
+                      }
+                    }}
+                  />
+                  <label htmlFor="story-upload" className="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg cursor-pointer hover:bg-black transition-all">
+                    이미지 변경
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {formStyle === 'PREMIUM' && activeSettingsTab === 'PORTFOLIO' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">포트폴리오 리스트</label>
+                <button 
+                  onClick={() => setPortfolio([...portfolio, { id: Date.now().toString(), title: '새 사례', summary: '설명', category: '기타', image: 'https://images.unsplash.com/photo-1454165833767-027ffea9e77b?auto=format&fit=crop&q=80&w=800' }])}
+                  className="p-1.5 bg-primary/5 text-primary rounded-lg hover:bg-primary hover:text-white transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                {portfolio.map((item, idx) => (
+                  <div key={item.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-slate-300">CASE {idx + 1}</span>
+                      <button onClick={() => setPortfolio(portfolio.filter(p => p.id !== item.id))} className="text-slate-300 hover:text-red-500">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="relative group">
+                        <img src={item.image} alt="Case" className="w-full aspect-square object-cover rounded-xl" referrerPolicy="no-referrer" />
+                        <input 
+                          type="file" 
+                          id={`port-upload-${item.id}`} 
+                          className="hidden" 
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const url = await handleImageUpload(file, 'portfolio');
+                              if (url) {
+                                setPortfolio(prev => prev.map((p, i) => i === idx ? { ...p, image: url } : p));
+                              }
+                            }
+                          }}
+                        />
+                        <label htmlFor={`port-upload-${item.id}`} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-xl cursor-pointer transition-all">
+                          <Upload className="w-4 h-4 text-white" />
+                        </label>
+                      </div>
+                      <div className="col-span-2 space-y-2">
+                        <input 
+                          type="text" 
+                          value={item.title}
+                          onChange={(e) => {
+                            setPortfolio(prev => prev.map((p, i) => i === idx ? { ...p, title: e.target.value } : p));
+                          }}
+                          className="w-full p-2 bg-white border border-slate-100 rounded-lg text-xs font-bold"
+                          placeholder="제목"
+                        />
+                        <input 
+                          type="text" 
+                          value={item.category}
+                          onChange={(e) => {
+                            setPortfolio(prev => prev.map((p, i) => i === idx ? { ...p, category: e.target.value } : p));
+                          }}
+                          className="w-full p-2 bg-white border border-slate-100 rounded-lg text-[10px] font-bold text-primary"
+                          placeholder="카테고리"
+                        />
+                        <textarea 
+                          value={item.summary}
+                          onChange={(e) => {
+                            setPortfolio(prev => prev.map((p, i) => i === idx ? { ...p, summary: e.target.value } : p));
+                          }}
+                          className="w-full p-2 bg-white border border-slate-100 rounded-lg text-[10px] h-16 resize-none"
+                          placeholder="요약 설명"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {formStyle === 'PREMIUM' && activeSettingsTab === 'REVIEWS' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">고객 리뷰</label>
+                <button 
+                  onClick={() => setReviews([...reviews, { id: Date.now().toString(), name: '신규 고객', text: '리뷰 내용을 입력하세요.', rating: 5 }])}
+                  className="p-1.5 bg-primary/5 text-primary rounded-lg hover:bg-primary hover:text-white transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                {reviews.map((review, idx) => (
+                  <div key={review.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <input 
+                        type="text" 
+                        value={review.name}
+                        onChange={(e) => {
+                          setReviews(prev => prev.map((r, i) => i === idx ? { ...r, name: e.target.value } : r));
+                        }}
+                        className="bg-transparent border-none outline-none font-bold text-slate-700 text-xs"
+                      />
+                      <button onClick={() => setReviews(reviews.filter(r => r.id !== review.id))} className="text-slate-300 hover:text-red-500">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <textarea 
+                      value={review.text}
+                      onChange={(e) => {
+                        setReviews(prev => prev.map((r, i) => i === idx ? { ...r, text: e.target.value } : r));
+                      }}
+                      className="w-full p-3 bg-white border border-slate-100 rounded-xl text-[10px] h-20 resize-none font-medium text-slate-500"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {formStyle === 'PREMIUM' && activeSettingsTab === 'FOOTER' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">브랜드명</label>
+                <input 
+                  type="text" 
+                  value={footer.brandName}
+                  onChange={(e) => setFooter({ ...footer, brandName: e.target.value })}
+                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-bold text-slate-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">연락처</label>
+                <input 
+                  type="text" 
+                  value={footer.contact}
+                  onChange={(e) => setFooter({ ...footer, contact: e.target.value })}
+                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-bold text-slate-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">이메일</label>
+                <input 
+                  type="text" 
+                  value={footer.email}
+                  onChange={(e) => setFooter({ ...footer, email: e.target.value })}
+                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-bold text-slate-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">주소</label>
+                <input 
+                  type="text" 
+                  value={footer.address}
+                  onChange={(e) => setFooter({ ...footer, address: e.target.value })}
+                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-bold text-slate-700"
+                />
+              </div>
+            </div>
+          )}
         </div>
+
         <button 
           onClick={handleSaveConfig}
           disabled={isSaving}
@@ -684,65 +1168,247 @@ const SmartFormBuilder: React.FC<{
                 <Copy className="w-3 h-3" />
               </button>
             </div>
-            <p className="text-[10px] text-emerald-600/60 font-medium">이 링크를 광고나 SNS에 공유하여 가망고객을 수집하세요.</p>
           </motion.div>
         )}
       </div>
 
-      <div className="neo-card p-12 bg-slate-50 border-none flex flex-col items-center justify-center relative overflow-hidden">
-        <AnimatePresence>
-          {showSuccess && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="absolute inset-0 z-20 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center text-center p-8"
-            >
-              <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-6">
-                <CheckCircle2 className="w-10 h-10 text-emerald-500" />
-              </div>
-              <h4 className="text-2xl font-bold text-slate-900 mb-2">신청이 완료되었습니다!</h4>
-              <p className="text-slate-500 font-medium">관리자가 확인 후 곧 연락드리겠습니다.</p>
-              <button 
-                onClick={() => setShowSuccess(false)}
-                className="mt-8 text-sm font-bold text-primary hover:underline"
-              >
-                다시 작성하기
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+      <div className="lg:col-span-7 neo-card p-0 bg-slate-50 border-none flex flex-col items-center justify-start relative overflow-hidden h-[85vh]">
+        <div className="w-full bg-slate-800 p-3 flex items-center gap-2 border-b border-slate-700 shrink-0">
+          <div className="flex gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+            <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+            <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+          </div>
+          <div className="flex-1 mx-4 bg-slate-700 rounded-lg h-5 flex items-center px-3">
+            <p className="text-[8px] text-slate-400 font-mono">https://smart-income.ai/form/{currentFormId || 'preview'}</p>
+          </div>
+        </div>
 
-        <div className="w-full max-w-sm bg-white rounded-[2.5rem] p-10 shadow-2xl space-y-8 relative z-10">
-          <div className="text-center space-y-2">
-            <h4 className="text-xl font-bold text-slate-900 tracking-tight">상담 신청하기</h4>
-            <p className="text-xs text-slate-400 font-medium tracking-wide">정보를 남겨주시면 곧 연락드리겠습니다.</p>
-          </div>
-          <div className="space-y-5">
-            {fields.map(field => (
-              <div key={field.id} className="space-y-2">
-                <div className="flex justify-between items-center ml-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{field.label}</label>
-                  {field.required && <span className="text-[8px] font-bold text-red-400 uppercase">필수</span>}
+        <div className="flex-1 w-full overflow-y-auto custom-scrollbar bg-white">
+          {formStyle === 'SIMPLE' ? (
+            <div className="min-h-full flex flex-col items-center justify-center p-12">
+              <AnimatePresence>
+                {showSuccess && (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className="absolute inset-0 z-20 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center text-center p-8"
+                  >
+                    <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-6">
+                      <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+                    </div>
+                    <h4 className="text-2xl font-bold text-slate-900 mb-2">신청이 완료되었습니다!</h4>
+                    <p className="text-slate-500 font-medium">관리자가 확인 후 곧 연락드리겠습니다.</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="w-full max-w-sm bg-white rounded-[2.5rem] p-10 shadow-2xl space-y-8 relative z-10 border border-slate-100">
+                <div className="text-center space-y-2">
+                  <h4 className="text-xl font-bold text-slate-900 tracking-tight">상담 신청하기</h4>
+                  <p className="text-xs text-slate-400 font-medium tracking-wide">정보를 남겨주시면 곧 연락드리겠습니다.</p>
                 </div>
-                <input 
-                  type={field.type}
-                  value={previewData[field.id] || ''}
-                  onChange={(e) => setPreviewData({ ...previewData, [field.id]: e.target.value })}
-                  placeholder={`${field.label}을(를) 입력하세요`}
-                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all text-sm font-medium"
-                />
+                <div className="space-y-5">
+                  {fields.map(field => (
+                    <div key={field.id} className="space-y-2">
+                      <div className="flex justify-between items-center ml-1">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{field.label}</label>
+                        {field.required && <span className="text-[8px] font-bold text-red-400 uppercase">필수</span>}
+                      </div>
+                      <input 
+                        type={field.type}
+                        value={previewData[field.id] || ''}
+                        onChange={(e) => setPreviewData({ ...previewData, [field.id]: e.target.value })}
+                        placeholder={`${field.label}을(를) 입력하세요`}
+                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all text-sm font-medium"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <button 
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="w-full py-5 bg-primary text-white font-bold rounded-2xl shadow-xl shadow-primary/20 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isSubmitting ? <Zap className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  신청 완료
+                </button>
               </div>
-            ))}
-          </div>
-          <button 
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="w-full py-5 bg-primary text-white font-bold rounded-2xl shadow-xl shadow-primary/20 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {isSubmitting ? <Zap className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            신청 완료
-          </button>
+            </div>
+          ) : (
+            <div className="min-h-full bg-white text-[#111111] font-sans">
+              {/* Hero Section */}
+              <section className="relative h-[600px] flex items-center justify-center overflow-hidden">
+                <img src={hero.backgroundImage} alt="Hero" className="absolute inset-0 w-full h-full object-cover" referrerPolicy="no-referrer" />
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"></div>
+                <div className="relative z-10 max-w-2xl px-8 text-center space-y-8">
+                  <motion.h1 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-4xl lg:text-5xl font-black text-white leading-tight tracking-tight"
+                  >
+                    {hero.headline}
+                  </motion.h1>
+                  <motion.p 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="text-lg text-white/80 font-medium"
+                  >
+                    {hero.subheadline}
+                  </motion.p>
+                  <motion.button 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="px-10 py-5 bg-[#C9A96E] text-white font-black rounded-full shadow-2xl shadow-[#C9A96E]/20 hover:scale-105 transition-all"
+                  >
+                    {hero.cta}
+                  </motion.button>
+                </div>
+              </section>
+
+              {/* Intro Section */}
+              <section className="py-24 px-12 max-w-6xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+                  <div className="relative">
+                    <div className="aspect-[4/5] rounded-[3rem] overflow-hidden shadow-2xl">
+                      <img src={intro.profileImage} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    </div>
+                    <div className="absolute -bottom-8 -right-8 p-8 bg-white rounded-[2rem] shadow-xl border border-slate-50 max-w-[240px]">
+                      <p className="text-[#C9A96E] font-black text-xs uppercase tracking-widest mb-2">Philosophy</p>
+                      <p className="text-sm font-bold text-slate-700 leading-relaxed italic">"{intro.philosophy}"</p>
+                    </div>
+                  </div>
+                  <div className="space-y-8">
+                    <div className="space-y-2">
+                      <p className="text-[#C9A96E] font-black text-sm uppercase tracking-[0.3em]">{intro.title}</p>
+                      <h2 className="text-4xl font-black tracking-tight">{intro.name}</h2>
+                    </div>
+                    <p className="text-xl font-bold text-slate-800 leading-relaxed">{intro.greeting}</p>
+                    <p className="text-slate-500 leading-relaxed text-base">{intro.description}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {intro.specialties.map((s, i) => (
+                        <span key={i} className="px-4 py-2 bg-slate-50 text-slate-500 text-xs font-bold rounded-full border border-slate-100">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Story Section */}
+              <section className="py-24 bg-slate-50">
+                <div className="max-w-6xl mx-auto px-12 grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+                  <div className="order-2 md:order-1 space-y-8">
+                    <h2 className="text-3xl font-black tracking-tight">{story.title}</h2>
+                    <p className="text-lg text-slate-600 leading-relaxed whitespace-pre-line">{story.content}</p>
+                  </div>
+                  <div className="order-1 md:order-2">
+                    <div className="aspect-video rounded-[2rem] overflow-hidden shadow-xl">
+                      <img src={story.image} alt="Story" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Portfolio Section */}
+              <section className="py-24 px-12 max-w-6xl mx-auto space-y-16">
+                <div className="text-center space-y-4">
+                  <p className="text-[#C9A96E] font-black text-sm uppercase tracking-[0.3em]">Cases</p>
+                  <h2 className="text-4xl font-black tracking-tight">최근 컨설팅 사례</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {portfolio.map((item) => (
+                    <div key={item.id} className="group cursor-pointer">
+                      <div className="aspect-[4/3] rounded-[2rem] overflow-hidden mb-6 relative shadow-lg">
+                        <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" />
+                        <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-[10px] font-black text-[#C9A96E] uppercase tracking-widest">
+                          {item.category}
+                        </div>
+                      </div>
+                      <h4 className="text-xl font-bold mb-2 group-hover:text-[#C9A96E] transition-colors">{item.title}</h4>
+                      <p className="text-sm text-slate-500 line-clamp-2">{item.summary}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Reviews Section */}
+              <section className="py-24 bg-[#111111] text-white">
+                <div className="max-w-6xl mx-auto px-12 space-y-16">
+                  <div className="text-center space-y-4">
+                    <p className="text-[#C9A96E] font-black text-sm uppercase tracking-[0.3em]">Testimonials</p>
+                    <h2 className="text-4xl font-black tracking-tight">고객들의 신뢰</h2>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {reviews.map((review) => (
+                      <div key={review.id} className="p-10 bg-white/5 rounded-[2rem] border border-white/10 space-y-6">
+                        <div className="flex gap-1">
+                          {[...Array(review.rating)].map((_, i) => (
+                            <Sparkles key={i} className="w-4 h-4 text-[#C9A96E]" />
+                          ))}
+                        </div>
+                        <p className="text-lg font-medium leading-relaxed italic text-white/90">"{review.text}"</p>
+                        <p className="text-sm font-black text-[#C9A96E] uppercase tracking-widest">{review.name}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              {/* Form Section */}
+              <section id="contact" className="py-24 px-12 max-w-4xl mx-auto space-y-16">
+                <div className="text-center space-y-4">
+                  <p className="text-[#C9A96E] font-black text-sm uppercase tracking-[0.3em]">Contact</p>
+                  <h2 className="text-4xl font-black tracking-tight">무료 상담 신청</h2>
+                  <p className="text-slate-500 font-medium">데이터 기반의 스마트한 설계를 지금 경험해보세요.</p>
+                </div>
+                <div className="bg-white rounded-[3rem] p-12 shadow-2xl border border-slate-50 space-y-8">
+                  <div className="space-y-6">
+                    {fields.map(field => (
+                      <div key={field.id} className="space-y-3">
+                        <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">{field.label}</label>
+                        <input 
+                          type={field.type}
+                          placeholder={`${field.label}을(를) 입력하세요`}
+                          className="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-[#C9A96E]/10 focus:border-[#C9A96E]/20 transition-all text-base font-medium"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <button className="w-full py-6 bg-[#111111] text-white font-black text-lg rounded-[2rem] shadow-2xl shadow-black/20 hover:scale-[1.02] active:scale-95 transition-all">
+                    상담 신청하기
+                  </button>
+                </div>
+              </section>
+
+              {/* Footer */}
+              <footer className="py-16 bg-slate-50 border-t border-slate-100">
+                <div className="max-w-6xl mx-auto px-12 flex flex-col md:flex-row justify-between gap-12">
+                  <div className="space-y-6">
+                    <h3 className="text-2xl font-black tracking-tight">{footer.brandName}</h3>
+                    <div className="space-y-2 text-sm font-medium text-slate-500">
+                      <p>연락처: {footer.contact}</p>
+                      <p>이메일: {footer.email}</p>
+                      <p>주소: {footer.address}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    {/* SNS Icons Placeholder */}
+                    <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary transition-colors cursor-pointer">B</div>
+                    <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary transition-colors cursor-pointer">I</div>
+                    <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary transition-colors cursor-pointer">K</div>
+                  </div>
+                </div>
+                <div className="max-w-6xl mx-auto px-12 mt-16 pt-8 border-t border-slate-100 text-center">
+                  <p className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.3em]">© 2024 {footer.brandName}. ALL RIGHTS RESERVED.</p>
+                </div>
+              </footer>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -971,7 +1637,7 @@ const LeadCollection: React.FC<{
     const data = leadsToDownload.map((l, idx) => {
       const baseData: Record<string, any> = {
         'No': leadsToDownload.length - idx,
-        '폼 이름': l.source?.replace('스마트폼: ', '') || '기본 폼',
+        '폼 이름': l.source?.replace('프리미엄 홈페이지: ', '') || '기본 폼',
         '수집 일시': l.submittedAt || l.createdAt,
         '성명': l.name,
         '연락처': l.phone,
@@ -1059,7 +1725,7 @@ const LeadCollection: React.FC<{
       email,
       status: LeadStatus.NEW,
       priority: 'MEDIUM',
-      source: '스마트폼: ' + (savedFormConfigs.find(f => f.id === response.formId)?.name || '기본 폼'),
+      source: '프리미엄 홈페이지: ' + (savedFormConfigs.find(f => f.id === response.formId)?.name || '기본 폼'),
       formData: response.formData,
       submittedAt: response.submittedAt
     };
@@ -1069,19 +1735,9 @@ const LeadCollection: React.FC<{
 
   const tools = [
     {
-      id: 'landing',
-      title: 'AI 랜딩페이지 생성',
-      description: '업종별 최적화된 고전환 랜딩페이지를 AI가 1분 만에 제작합니다.',
-      icon: Globe,
-      color: 'text-blue-500',
-      bg: 'bg-blue-50',
-      tag: 'HOT',
-      component: <LandingPageGenerator onSave={handleSaveLandingPage} initialData={editingPage} savedPages={savedLandingPages} />
-    },
-    {
       id: 'form',
-      title: '스마트 가망고객 폼',
-      description: '고객의 심리를 자극하는 질문 설계로 DB 수집률을 300% 이상 높입니다.',
+      title: '프리미엄 홈페이지',
+      description: '나만의 프리미엄 홈페이지를 보유해 보세요\n고객의 심리를 자극해 DB수집을 자동으로 할 수 있습니다.',
       icon: FormInput,
       color: 'text-accent',
       bg: 'bg-accent/10',
@@ -1095,6 +1751,16 @@ const LeadCollection: React.FC<{
         initialConfig={editingForm}
         onReset={() => setEditingForm(null)}
       />
+    },
+    {
+      id: 'landing',
+      title: 'AI 랜딩페이지 생성',
+      description: '업종별 최적화된 고전환 랜딩페이지를 AI가 1분 만에 제작합니다.',
+      icon: Globe,
+      color: 'text-blue-500',
+      bg: 'bg-blue-50',
+      tag: 'HOT',
+      component: <LandingPageGenerator onSave={handleSaveLandingPage} initialData={editingPage} savedPages={savedLandingPages} />
     }
   ];
 
@@ -1221,7 +1887,7 @@ const LeadCollection: React.FC<{
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {savedFormConfigs.map((config) => {
-              const formLeads = leads.filter(l => l.source === `스마트폼: ${config.name}`);
+              const formLeads = leads.filter(l => l.source === `프리미엄 홈페이지: ${config.name}`);
               return (
                 <motion.div 
                   key={config.id}
@@ -1236,7 +1902,7 @@ const LeadCollection: React.FC<{
                     <div className="flex gap-1">
                       <button 
                         onClick={() => {
-                          setLeadFilterSource(`스마트폼: ${config.name}`);
+                          setLeadFilterSource(`프리미엄 홈페이지: ${config.name}`);
                           // Scroll to leads section
                           setTimeout(() => {
                             const leadsSection = document.getElementById('leads-management-section');
@@ -1388,7 +2054,7 @@ const LeadCollection: React.FC<{
                   onClick={() => setLeadFilterSource(null)}
                   className="flex items-center gap-2 px-3 py-2 bg-primary/10 text-primary rounded-xl text-[10px] font-bold border border-primary/20"
                 >
-                  <span>필터: {leadFilterSource.replace('스마트폼: ', '')}</span>
+                  <span>필터: {leadFilterSource.replace('프리미엄 홈페이지: ', '')}</span>
                   <X className="w-3 h-3" />
                 </button>
               )}
@@ -1512,7 +2178,7 @@ const LeadCollection: React.FC<{
                         <td className="p-6">
                           <div className="flex items-center gap-2">
                             <div className="w-1.5 h-1.5 rounded-full bg-primary/40"></div>
-                            <span className="text-xs font-bold text-slate-700">{res.source?.replace('스마트폼: ', '') || '기본 폼'}</span>
+                            <span className="text-xs font-bold text-slate-700">{res.source?.replace('프리미엄 홈페이지: ', '') || '기본 폼'}</span>
                           </div>
                         </td>
                         <td className="p-6">

@@ -492,7 +492,7 @@ const Marketing: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void 
             <div className="content-block">{parseMarkdownLike(part)}</div>
             {finalImages[i] && (
               <div className="my-20 overflow-hidden rounded-[3rem] shadow-2xl border-[16px] border-white group relative">
-                <img src={finalImages[i]} alt={`Blog Illustration ${i+1}`} className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-1000" />
+                <img src={finalImages[i]} alt={`Blog Illustration ${i+1}`} className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-1000" referrerPolicy="no-referrer" />
                 <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-[3rem]"></div>
                 <div className="absolute top-8 right-8 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button 
