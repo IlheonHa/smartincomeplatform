@@ -453,7 +453,7 @@ const SmartFormBuilder: React.FC<{
   onReset?: () => void;
 }> = ({ currentUser, onSaveConfig, onSubmitResponse, savedFormConfigs, onDeleteFormConfig, initialConfig, onReset }) => {
   const [formName, setFormName] = useState('기본 상담 신청서');
-  const [formStyle, setFormStyle] = useState<'SIMPLE' | 'PREMIUM'>('SIMPLE');
+  const [formStyle, setFormStyle] = useState<'SIMPLE' | 'PREMIUM'>('PREMIUM');
   const [fields, setFields] = useState([
     { id: '1', label: '성함', type: 'text', required: true },
     { id: '2', label: '연락처', type: 'tel', required: true },
@@ -701,27 +701,27 @@ const SmartFormBuilder: React.FC<{
         {/* Style Selector */}
         <div className="flex p-1 bg-slate-100 rounded-2xl">
           <button 
-            onClick={() => setFormStyle('SIMPLE')}
-            className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all ${formStyle === 'SIMPLE' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-          >
-            기본 폼
-          </button>
-          <button 
             onClick={() => setFormStyle('PREMIUM')}
             className={`flex-1 py-3 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2 ${formStyle === 'PREMIUM' ? 'bg-gradient-to-r from-amber-400 to-amber-600 text-white shadow-lg shadow-amber-200 scale-[1.02]' : 'text-slate-400 hover:text-slate-600'}`}
           >
             <Sparkles className={`w-3 h-3 ${formStyle === 'PREMIUM' ? 'text-white animate-pulse' : 'text-slate-300'}`} />
             프리미엄 홈페이지
           </button>
+          <button 
+            onClick={() => setFormStyle('SIMPLE')}
+            className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all ${formStyle === 'SIMPLE' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            기본 폼
+          </button>
         </div>
 
         {formStyle === 'PREMIUM' && (
-          <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+          <div className="flex gap-1 overflow-x-auto pb-2 custom-scrollbar">
             {['BASIC', 'HERO', 'INTRO', 'STORY', 'PORTFOLIO', 'REVIEWS', 'FOOTER'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveSettingsTab(tab as any)}
-                className={`px-4 py-2 rounded-full text-[10px] font-black whitespace-nowrap transition-all ${activeSettingsTab === tab ? 'bg-primary text-white' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                className={`px-2.5 py-1.5 rounded-full text-[10px] font-black whitespace-nowrap transition-all ${activeSettingsTab === tab ? 'bg-primary text-white' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
               >
                 {tab === 'BASIC' ? '기본/필드' : 
                  tab === 'HERO' ? '히어로' : 
