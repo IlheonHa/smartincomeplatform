@@ -49,6 +49,24 @@ const PublicFormView: React.FC = () => {
           if (config && !formError) {
             console.log('[Form] Successfully loaded from Supabase');
             const camelConfig = toCamelCase(config);
+            
+            // Fetch owner email for notifications
+            const ownerId = camelConfig.userId || camelConfig.user_id;
+            if (ownerId) {
+              try {
+                const { data: userData } = await supabase
+                  .from('users')
+                  .select('login_id')
+                  .eq('id', ownerId)
+                  .single();
+                if (userData) {
+                  camelConfig.ownerEmail = userData.login_id;
+                }
+              } catch (e) {
+                console.warn('[Form] Failed to fetch owner email', e);
+              }
+            }
+
             setFormConfig(camelConfig);
             document.title = `${camelConfig.name} - 상담 신청`;
             setError(null);
@@ -131,6 +149,53 @@ const PublicFormView: React.FC = () => {
 
       const { error: submitError } = await supabase.from('leads').insert(leadPayload);
       if (submitError) throw submitError;
+
+      // Send Email Notification
+      try {
+        const emailPayload = {
+          to: formConfig.ownerEmail,
+          userId: formConfig.user_id || formConfig.userId,
+          subject: `📩 [${formConfig.name}] 새 상담 신청이 들어왔습니다`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+              <h2 style="color: #333;">새 상담 신청 알림</h2>
+              <p style="color: #666;">'${formConfig.name}'을 통해 새로운 상담 신청이 접수되었습니다.</p>
+              <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 10px 0; color: #888; width: 100px;">신청자명</td>
+                  <td style="padding: 10px 0; font-weight: bold;">${leadPayload.name}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px 0; color: #888;">연락처</td>
+                  <td style="padding: 10px 0; font-weight: bold;">${leadPayload.phone}</td>
+                </tr>
+                ${leadPayload.email ? `
+                <tr>
+                  <td style="padding: 10px 0; color: #888;">이메일</td>
+                  <td style="padding: 10px 0; font-weight: bold;">${leadPayload.email}</td>
+                </tr>
+                ` : ''}
+              </table>
+              <div style="margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-radius: 5px;">
+                <p style="margin: 0 0 10px 0; color: #888; font-size: 12px; text-transform: uppercase;">상세 문의 내용</p>
+                <p style="margin: 0; white-space: pre-wrap;">${leadPayload.notes}</p>
+              </div>
+              <div style="margin-top: 30px; text-align: center;">
+                <a href="${window.location.origin}/crm" style="display: inline-block; padding: 12px 24px; background-color: #111; color: #fff; text-decoration: none; border-radius: 5px; font-weight: bold;">CRM에서 확인하기</a>
+              </div>
+            </div>
+          `
+        };
+
+        fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(emailPayload)
+        }).catch(err => console.error('Failed to send email notification:', err));
+      } catch (emailErr) {
+        console.error('Error constructing email notification:', emailErr);
+      }
 
       setIsSubmitting(false);
       setIsSuccess(true);

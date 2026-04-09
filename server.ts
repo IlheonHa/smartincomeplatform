@@ -283,6 +283,54 @@ async function startServer() {
     }
   });
 
+  // Email Notification Integration (Resend)
+  app.post('/api/send-email', async (req, res) => {
+    const { to, subject, html, userId } = req.body;
+    
+    let finalTo = to;
+    if (!finalTo && userId) {
+      const user = users.find(u => String(u.id) === String(userId));
+      if (user) {
+        finalTo = user.loginId;
+      }
+    }
+
+    if (!finalTo) {
+      console.warn(`[API] Email Send Request failed: No recipient found for userId ${userId}`);
+      return res.status(400).json({ error: "Recipient email (to) or valid userId is required" });
+    }
+
+    console.log(`[API] Email Send Request to: ${finalTo} (User: ${userId || 'system'})`);
+
+    const RESEND_API_KEY = process.env.RESEND_API_KEY || "re_EZBxeziH_Nws9winQTcHvR15skxsXjyx3";
+
+    try {
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${RESEND_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          from: "onboarding@resend.dev",
+          to: finalTo,
+          subject: subject,
+          html: html
+        })
+      });
+
+      const result = await response.json();
+      console.log("[API] Resend Result:", result);
+      res.json({ success: true, result });
+    } catch (error: any) {
+      console.error("[API] Resend Error:", error);
+      res.status(500).json({ 
+        error: "Failed to send email", 
+        details: error.message 
+      });
+    }
+  });
+
   // Solapi (Kakao Alimtalk) Integration
   app.post('/api/kakao/send', async (req, res) => {
     const { phone, message, templateId, pfid, apiKey: userApiKey, apiSecret: userApiSecret, senderNumber: userSenderNumber, userId } = req.body;

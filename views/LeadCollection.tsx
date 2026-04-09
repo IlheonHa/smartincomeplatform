@@ -498,7 +498,7 @@ const SmartFormBuilder: React.FC<{
   const [footer, setFooter] = useState({
     brandName: '스마트 보험설계',
     contact: currentUser.phone,
-    email: currentUser.loginId + '@gmail.com',
+    email: currentUser.loginId.includes('@') ? currentUser.loginId : currentUser.loginId + '@gmail.com',
     address: '서울특별시 강남구 테헤란로 123, 스마트빌딩 15층',
     sns: { blog: '#', instagram: '#', kakao: '#' }
   });
