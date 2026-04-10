@@ -283,26 +283,18 @@ async function startServer() {
     }
   });
 
-  // Email Notification Integration (Resend)
-  app.post('/api/send-email', async (req, res) => {
-    const { to, subject, html, userId } = req.body;
+  // Test Email Route
+  app.get('/api/test-email', async (req, res) => {
+    const { email, apiKey } = req.query;
+    const targetEmail = email ? String(email) : 'ilheonha@gmail.com';
     
-    let finalTo = to;
-    if (!finalTo && userId) {
-      const user = users.find(u => String(u.id) === String(userId));
-      if (user) {
-        finalTo = user.loginId;
-      }
-    }
-
-    if (!finalTo) {
-      console.warn(`[API] Email Send Request failed: No recipient found for userId ${userId}`);
-      return res.status(400).json({ error: "Recipient email (to) or valid userId is required" });
-    }
-
-    console.log(`[API] Email Send Request to: ${finalTo} (User: ${userId || 'system'})`);
-
-    const RESEND_API_KEY = process.env.RESEND_API_KEY || "re_EZBxeziH_Nws9winQTcHvR15skxsXjyx3";
+    console.log(`[API] Manual Test Email Request for: ${targetEmail}`);
+    
+    const RESEND_API_KEY = (apiKey && String(apiKey).length > 5) 
+      ? String(apiKey) 
+      : (process.env.RESEND_API_KEY || "re_EZBxeziH_Nws9winQTcHvR15skxsXjyx3");
+    
+    const fromAddress = "onboarding@resend.dev";
 
     try {
       const response = await fetch("https://api.resend.com/emails", {
@@ -312,7 +304,105 @@ async function startServer() {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          from: "onboarding@resend.dev",
+          from: fromAddress,
+          to: targetEmail,
+          subject: "🚀 [Smart Insure Lab] 시스템 테스트 메일",
+          html: `
+            <div style="font-family: sans-serif; padding: 20px;">
+              <h2>시스템 알림 테스트</h2>
+              <p>이 메일은 시스템 알림 기능 테스트를 위해 발송되었습니다.</p>
+              <p>발송 시간: ${new Date().toLocaleString()}</p>
+              <p>수신자: ${targetEmail}</p>
+            </div>
+          `
+        })
+      });
+
+      const result = await response.json();
+      res.json({ success: response.ok, result });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Email Notification Integration (Resend)
+  app.post('/api/send-email', async (req, res) => {
+    const { to, subject, html, userId } = req.body;
+    
+    let finalTo = to;
+    
+    // Master Admin Emails for Fallback
+    const MASTER_EMAILS: Record<string, string> = {
+      'admin': 'ilheonha@gmail.com',
+      'admin-0': 'ilheonha@gmail.com',
+      'admin-1': 'ilheonha@gmail.com',
+      'admin-2': 'hih@sciencecenter.or.kr',
+      'ilheonha@gmail.com': 'ilheonha@gmail.com',
+      'hih@sciencecenter.or.kr': 'hih@sciencecenter.or.kr'
+    };
+
+    if (!finalTo && userId) {
+      console.log(`[API] Email recipient missing, looking up userId: ${userId}`);
+      
+      // 1. Check local cache
+      const user = users.find(u => String(u.id) === String(userId) || String(u.loginId) === String(userId));
+      if (user && user.loginId && user.loginId.includes('@')) {
+        finalTo = user.loginId;
+        console.log(`[API] Found recipient in local cache: ${finalTo}`);
+      } 
+      
+      // 2. Check Master Admin Fallback
+      if (!finalTo || !finalTo.includes('@')) {
+        const lookupKey = (user?.loginId || userId || '').toString();
+        if (MASTER_EMAILS[lookupKey]) {
+          finalTo = MASTER_EMAILS[lookupKey];
+          console.log(`[API] Using Master Admin Fallback: ${finalTo}`);
+        }
+      }
+
+      // 3. Check Supabase as last resort
+      if (!finalTo || !finalTo.includes('@')) {
+        try {
+          const supabaseUrl = process.env.VITE_SUPABASE_URL;
+          const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+          if (supabaseUrl && supabaseKey) {
+            const { createClient } = await import('@supabase/supabase-js');
+            const supabase = createClient(supabaseUrl, supabaseKey);
+            const { data: userData } = await supabase.from('users').select('login_id').eq('id', userId).single();
+            if (userData && userData.login_id && userData.login_id.includes('@')) {
+              finalTo = userData.login_id;
+              console.log(`[API] Found recipient in Supabase: ${finalTo}`);
+            }
+          }
+        } catch (supaErr) {
+          console.error(`[API] Supabase lookup failed for userId ${userId}:`, supaErr);
+        }
+      }
+    }
+
+    // Final safety check for malformed emails or missing recipients
+    if (!finalTo || !finalTo.includes('@')) {
+      console.warn(`[API] Email Send Request failed: No valid recipient found for userId ${userId}. Falling back to master admin.`);
+      finalTo = 'ilheonha@gmail.com'; // Absolute fallback to ensure someone gets it
+    }
+
+    console.log(`[API] Email Send Request to: ${finalTo} (User: ${userId || 'system'})`);
+
+    // Use the provided API key
+    const RESEND_API_KEY = process.env.RESEND_API_KEY || "re_EZBxeziH_Nws9winQTcHvR15skxsXjyx3";
+    const fromAddress = "onboarding@resend.dev";
+
+    console.log(`[API] Attempting to send email via Resend. From: ${fromAddress}, To: ${finalTo}, Subject: ${subject}`);
+
+    try {
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${RESEND_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          from: fromAddress,
           to: finalTo,
           subject: subject,
           html: html
@@ -320,12 +410,24 @@ async function startServer() {
       });
 
       const result = await response.json();
-      console.log("[API] Resend Result:", result);
+      console.log("[API] Resend API Response Status:", response.status);
+      console.log("[API] Resend API Response Body:", JSON.stringify(result));
+      
+      if (!response.ok) {
+        console.error("[API] Resend API Error Details:", result);
+        return res.status(response.status).json({ 
+          success: false,
+          error: "Resend API error", 
+          details: result 
+        });
+      }
+
       res.json({ success: true, result });
     } catch (error: any) {
-      console.error("[API] Resend Error:", error);
+      console.error("[API] Resend Fetch Critical Error:", error);
       res.status(500).json({ 
-        error: "Failed to send email", 
+        success: false,
+        error: "Failed to send email due to network or server error", 
         details: error.message 
       });
     }

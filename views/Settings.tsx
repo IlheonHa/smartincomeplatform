@@ -29,6 +29,7 @@ const Settings: React.FC<SettingsProps> = ({ onLogout, user, onUpdateUser, syste
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [testStatus, setTestStatus] = useState<{ type: 'success' | 'error' | 'loading' | null, message: string }>({ type: null, message: '' });
 
   useEffect(() => {
     if (user) {
@@ -47,7 +48,7 @@ const Settings: React.FC<SettingsProps> = ({ onLogout, user, onUpdateUser, syste
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleApiKeyChange = (provider: 'gemini' | 'openai', value: string) => {
+  const handleApiKeyChange = (provider: 'gemini' | 'openai' | 'resend', value: string) => {
     setFormData(prev => ({
       ...prev,
       apiKeys: {
@@ -170,6 +171,70 @@ const Settings: React.FC<SettingsProps> = ({ onLogout, user, onUpdateUser, syste
                 </div>
               )}
               {!isAdmin && <p className="text-[10px] text-slate-400 font-medium">* 등급 변경은 관리자에게 문의해주세요.</p>}
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <Shield className="w-3 h-3" /> 시스템 테스트
+              </label>
+              <button
+                disabled={testStatus.type === 'loading'}
+                onClick={async () => {
+                  try {
+                    setTestStatus({ type: 'loading', message: '테스트 메일을 발송 중입니다...' });
+                    console.log('[Settings] Test email button clicked');
+                    const emailAddress = user?.loginId || 'ilheonha@gmail.com';
+                    const userResendKey = formData.apiKeys?.resend || user?.apiKeys?.resend;
+                    console.log(`[Settings] Attempting to send test email to: ${emailAddress}`);
+                    
+                    const res = await fetch(`/api/test-email?email=${encodeURIComponent(emailAddress)}&apiKey=${encodeURIComponent(userResendKey || '')}`);
+                    
+                    if (!res.ok) {
+                      const errorText = await res.text();
+                      console.error('[Settings] Test email API error status:', res.status, errorText);
+                      setTestStatus({ 
+                        type: 'error', 
+                        message: `발송 실패 (서버 응답 오류): ${res.status}. 원인: ${errorText.substring(0, 50)}...` 
+                      });
+                      return;
+                    }
+
+                    const data = await res.json();
+                    console.log('[Settings] Test email API response:', data);
+                    
+                    if (data.success) {
+                      setTestStatus({ 
+                        type: 'success', 
+                        message: `테스트 메일이 ${emailAddress}로 발송되었습니다. 스팸함도 꼭 확인해주세요!` 
+                      });
+                    } else {
+                      const errorMsg = data.result?.message || data.error || JSON.stringify(data.result);
+                      setTestStatus({ type: 'error', message: `발송 실패: ${errorMsg}` });
+                    }
+                  } catch (err: any) {
+                    console.error('[Settings] Test email fetch error:', err);
+                    setTestStatus({ type: 'error', message: `네트워크 오류 또는 시스템 에러: ${err.message}` });
+                  }
+                }}
+                className="w-full px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <Sparkles className={`w-4 h-4 ${testStatus.type === 'loading' ? 'animate-spin' : 'text-primary'}`} /> 
+                {testStatus.type === 'loading' ? '발송 중...' : '테스트 알림 발송'}
+              </button>
+
+              {testStatus.type && (
+                <div className={`p-3 rounded-xl flex items-start gap-2 animate-in fade-in slide-in-from-top-1 ${
+                  testStatus.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 
+                  testStatus.type === 'loading' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
+                  'bg-red-50 text-red-700 border border-red-100'
+                }`}>
+                  {testStatus.type === 'success' ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" /> : 
+                   testStatus.type === 'loading' ? <Sparkles className="w-4 h-4 mt-0.5 shrink-0 animate-pulse" /> :
+                   <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />}
+                  <p className="text-[11px] font-medium leading-relaxed">{testStatus.message}</p>
+                </div>
+              )}
+
+              <p className="text-[10px] text-slate-400 mt-1">* 현재 로그인된 이메일(${user?.loginId || 'ilheonha@gmail.com'})로 테스트 메일을 보냅니다.</p>
             </div>
           </div>
 
@@ -329,6 +394,20 @@ const Settings: React.FC<SettingsProps> = ({ onLogout, user, onUpdateUser, syste
                 className="w-full px-4 py-4 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-sm font-mono font-bold text-indigo-600"
               />
               <p className="text-[10px] text-slate-400 font-medium">GPT-4o 등 고성능 모델을 병행 사용할 수 있습니다.</p>
+            </div>
+
+            <div className="space-y-3 md:col-span-2">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                📧 Resend API Key (알림 발송용)
+              </label>
+              <input 
+                type="text" 
+                value={formData.apiKeys?.resend || ''}
+                onChange={(e) => handleApiKeyChange('resend', e.target.value)}
+                placeholder="re_..."
+                className="w-full px-4 py-4 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-sm font-mono font-bold text-indigo-600"
+              />
+              <p className="text-[10px] text-slate-400 font-medium">* 메일 발송을 위해 <a href="https://resend.com" target="_blank" className="text-indigo-600 underline">resend.com</a>에서 발급받은 API 키를 입력하세요. 도메인 인증 전에는 본인 이메일로만 발송 가능합니다.</p>
             </div>
           </div>
           

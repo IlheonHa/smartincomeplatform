@@ -152,9 +152,14 @@ const PublicFormView: React.FC = () => {
 
       // Send Email Notification
       try {
+        const ownerId = formConfig.user_id || formConfig.userId;
+        const ownerEmail = formConfig.ownerEmail;
+        
+        console.log(`[Form] Triggering email notification. OwnerEmail: ${ownerEmail}, OwnerId: ${ownerId}`);
+        
         const emailPayload = {
-          to: formConfig.ownerEmail,
-          userId: formConfig.user_id || formConfig.userId,
+          to: ownerEmail,
+          userId: ownerId,
           subject: `📩 [${formConfig.name}] 새 상담 신청이 들어왔습니다`,
           html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
@@ -188,13 +193,20 @@ const PublicFormView: React.FC = () => {
           `
         };
 
-        fetch('/api/send-email', {
+        const response = await fetch('/api/send-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(emailPayload)
-        }).catch(err => console.error('Failed to send email notification:', err));
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+          console.log('[Form] Email notification sent successfully:', result);
+        } else {
+          console.error('[Form] Email notification failed:', result);
+        }
       } catch (emailErr) {
-        console.error('Error constructing email notification:', emailErr);
+        console.error('Error sending email notification:', emailErr);
       }
 
       setIsSubmitting(false);
@@ -564,6 +576,14 @@ const PublicFormView: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {footer.compliance && (
+              <div className="mt-16 pt-8 border-t border-slate-200">
+                <div className="text-[10px] text-slate-400 leading-relaxed whitespace-pre-wrap font-medium">
+                  {footer.compliance}
+                </div>
+              </div>
+            )}
             
             <div className="mt-24 pt-12 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-6">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">
@@ -644,6 +664,14 @@ const PublicFormView: React.FC = () => {
               </button>
             </div>
           </form>
+          
+          {formConfig.theme?.footer?.compliance && (
+            <div className="mt-8 p-8 bg-white rounded-[2rem] border border-slate-100 shadow-sm">
+              <div className="text-[10px] text-slate-400 leading-relaxed whitespace-pre-wrap font-medium">
+                {formConfig.theme.footer.compliance}
+              </div>
+            </div>
+          )}
 
           <div className="text-center">
             <p className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.3em]">Powered by Smart Insure Lab OS</p>

@@ -65,6 +65,7 @@ export interface User {
   apiKeys?: {
     gemini?: string;
     openai?: string;
+    resend?: string;
   };
 }
 

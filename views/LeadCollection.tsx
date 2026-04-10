@@ -500,7 +500,43 @@ const SmartFormBuilder: React.FC<{
     contact: currentUser.phone,
     email: currentUser.loginId.includes('@') ? currentUser.loginId : currentUser.loginId + '@gmail.com',
     address: '서울특별시 강남구 테헤란로 123, 스마트빌딩 15층',
-    sns: { blog: '#', instagram: '#', kakao: '#' }
+    sns: { blog: '#', instagram: '#', kakao: '#' },
+    compliance: `본 홈페이지는 보험상품 안내를 위한 광고입니다.
+
+(보험대리점) ○○보험대리점 (협회등록번호: XXXXX)
+(보험설계사) 보험설계사 ○○○ (협회등록번호: XXXXX)
+
+본 광고는 「보험업법」 및 관련 법령에서 정한 광고심의 기준을 준수하였으며,
+유효기간은 심의일로부터 1년입니다.
+(심의필번호: XXXXX / 심의일: YYYY.MM.DD)
+
+보험계약자는 기존 보험계약을 해지하고 새로운 보험계약을 체결하는 경우,
+다음과 같은 불이익이 발생할 수 있습니다.
+
+질병 이력, 연령 증가 등으로 가입이 거절되거나 보험료가 인상될 수 있습니다.
+가입 상품에 따라 새로운 면책기간 적용 및 보장 제한 등 기타 불이익이 발생할 수 있습니다.
+
+📌 개인정보 수집 및 이용 안내
+
+① 개인정보의 수집 · 이용 목적
+→ 보험 상담, 보험상품 안내, 계약 체결 및 유지관리
+
+② 수집하는 개인정보 항목
+→ 성명, 연락처, 상담내용 등
+
+③ 개인정보 보유 및 이용 기간
+→ 수집·이용 목적 달성 시까지 또는 관련 법령에 따른 보관기간까지
+
+④ 개인정보 수집 및 이용에 대한 동의를 거부할 권리가 있으며,
+동의를 거부할 경우 상담 및 서비스 이용에 제한이 있을 수 있습니다.
+
+⚠️ 추가 권장 문구 (신뢰도 + 법적 안정성 강화)
+
+본 홈페이지는 특정 보험상품의 계약 체결을 권유하기 위한 목적으로 제작되었습니다.
+보험계약 체결 전 상품설명서 및 약관을 반드시 확인하시기 바랍니다.
+
+보험상품은 금융상품으로 예금자보호법에 따라 보호되지 않습니다.
+(단, 일부 상품은 관련 법령에 따라 보호될 수 있습니다)`
   });
 
   const [previewData, setPreviewData] = useState<Record<string, string>>({});
@@ -1130,6 +1166,19 @@ const SmartFormBuilder: React.FC<{
                   className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-bold text-slate-700"
                 />
               </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">광고 심의 및 법적 고지 (Compliance)</label>
+                <textarea 
+                  rows={8}
+                  value={footer.compliance || ''}
+                  onChange={(e) => setFooter({ ...footer, compliance: e.target.value })}
+                  placeholder="보험업법에 따른 필수 고지 사항을 입력하세요."
+                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 text-[10px] font-medium text-slate-600 leading-relaxed resize-none"
+                />
+                <p className="text-[9px] text-slate-400 leading-relaxed px-1">
+                  * 보험업법 및 광고심의 기준에 따른 필수 항목(대리점명, 등록번호, 심의필 등)을 입력해주세요.
+                </p>
+              </div>
             </div>
           )}
         </div>
@@ -1403,6 +1452,15 @@ const SmartFormBuilder: React.FC<{
                     <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary transition-colors cursor-pointer">K</div>
                   </div>
                 </div>
+
+                {footer.compliance && (
+                  <div className="max-w-6xl mx-auto px-12 mt-12 pt-8 border-t border-slate-100">
+                    <div className="text-[10px] text-slate-400 leading-relaxed whitespace-pre-wrap font-medium">
+                      {footer.compliance}
+                    </div>
+                  </div>
+                )}
+
                 <div className="max-w-6xl mx-auto px-12 mt-16 pt-8 border-t border-slate-100 text-center">
                   <p className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.3em]">© 2024 {footer.brandName}. ALL RIGHTS RESERVED.</p>
                 </div>

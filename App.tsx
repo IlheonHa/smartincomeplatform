@@ -219,6 +219,13 @@ const App: React.FC = () => {
         if (userData) {
           fetchedUsers = userData.map(toCamelCase);
           setUsers(fetchedUsers);
+          
+          // Sync to local server for backend features like email notifications
+          fetch('/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(fetchedUsers)
+          }).catch(err => console.error('[App] Failed to sync users to local server:', err));
         }
         if (leadData) setLeads(leadData.map(toCamelCase));
         if (settingsData) setSystemSettings(toCamelCase(settingsData));
