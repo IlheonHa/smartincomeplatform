@@ -62,7 +62,6 @@ const UsefulTools: React.FC<{
     { id: 'financial-law', label: '금소법 가이드', icon: ShieldAlert, color: 'bg-amber-500' },
     { id: 'keyword-analysis', label: '키워드 분석', icon: TrendingUp, color: 'bg-indigo-500' },
     { id: 'disease-code', label: '질병코드분석', icon: Activity, color: 'bg-rose-500' },
-    { id: 'insurance-age', label: '보험나이계산기', icon: Calculator, color: 'bg-slate-700' },
   ];
 
   const renderToolContent = () => {
@@ -81,7 +80,6 @@ const UsefulTools: React.FC<{
       case 'financial-law': return <FinancialLawTool />;
       case 'keyword-analysis': return <KeywordAnalysisTool currentUser={currentUser} onUpdateUser={onUpdateUser} />;
       case 'disease-code': return <DiseaseCodeTool currentUser={currentUser} onUpdateUser={onUpdateUser} />;
-      case 'insurance-age': return <InsuranceAgeTool />;
       default: return null;
     }
   };
@@ -133,8 +131,15 @@ const CalendarTool: React.FC<{
   onDeleteEvent: (id: string) => Promise<void>,
   onDeleteEvents: (ids: string[]) => Promise<void>
 }> = ({ currentUser, events, onAddEvent, onUpdateEvent, onDeleteEvent, onDeleteEvents }) => {
+  const getLocalDateString = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(getLocalDateString(new Date()));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
@@ -156,7 +161,7 @@ const CalendarTool: React.FC<{
 
   const handleDateClick = (day: number) => {
     const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = getLocalDateString(date);
     setSelectedDate(dateStr);
   };
 
@@ -273,7 +278,7 @@ const CalendarTool: React.FC<{
                 onClick={() => {
                   const today = new Date();
                   setCurrentDate(today);
-                  setSelectedDate(today.toISOString().split('T')[0]);
+                  setSelectedDate(getLocalDateString(today));
                 }}
                 className="px-4 py-2 text-[10px] font-black text-indigo-600 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-all border border-indigo-100 uppercase tracking-widest"
               >
@@ -301,27 +306,47 @@ const CalendarTool: React.FC<{
               if (day === null) return <div key={i} className="aspect-square"></div>;
               
               const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-              const dateStr = date.toISOString().split('T')[0];
+              const dateStr = getLocalDateString(date);
               const isSelected = selectedDate === dateStr;
               const hasEvents = events.some(e => e.date === dateStr);
-              const isToday = new Date().toISOString().split('T')[0] === dateStr;
+              const isToday = getLocalDateString(new Date()) === dateStr;
 
               return (
                 <button
                   key={i}
                   onClick={() => handleDateClick(day)}
-                  className={`aspect-square rounded-2xl flex flex-col items-center justify-center relative transition-all group ${
+                  className={`aspect-square rounded-2xl flex flex-col items-center justify-start p-2 relative transition-all group overflow-hidden ${
                     isSelected 
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' 
                       : 'hover:bg-slate-50 text-slate-700'
                   }`}
                 >
-                  <span className={`text-sm font-bold ${isToday && !isSelected ? 'text-indigo-600' : ''}`}>
+                  <span className={`text-sm font-bold mb-1 ${isToday && !isSelected ? 'text-indigo-600' : ''}`}>
                     {day}
                   </span>
-                  {hasEvents && (
-                    <div className={`w-1 h-1 rounded-full mt-1 ${isSelected ? 'bg-white' : 'bg-indigo-400'}`}></div>
-                  )}
+                  
+                  <div className="w-full space-y-0.5 overflow-hidden">
+                    {events
+                      .filter(e => e.date === dateStr)
+                      .slice(0, 2)
+                      .map((event, idx) => (
+                        <div 
+                          key={event.id} 
+                          className={`text-[8px] leading-tight truncate px-1 rounded-sm ${
+                            isSelected ? 'bg-white/20 text-white' : 'bg-indigo-50 text-indigo-600'
+                          }`}
+                        >
+                          {event.title}
+                        </div>
+                      ))
+                    }
+                    {events.filter(e => e.date === dateStr).length > 2 && (
+                      <div className={`text-[7px] font-bold text-center ${isSelected ? 'text-white/60' : 'text-slate-400'}`}>
+                        +{events.filter(e => e.date === dateStr).length - 2}
+                      </div>
+                    )}
+                  </div>
+
                   {isToday && !isSelected && (
                     <div className="absolute top-1 right-1 w-1 h-1 rounded-full bg-indigo-600"></div>
                   )}
@@ -1266,163 +1291,6 @@ const DiseaseCodeTool: React.FC<{ currentUser: any, onUpdateUser: (user: any) =>
           </div>
         </motion.div>
       )}
-    </div>
-  );
-};
-
-const InsuranceAgeTool: React.FC = () => {
-  const [birthDate, setBirthDate] = useState('');
-  const [insuranceAge, setInsuranceAge] = useState<number | null>(null);
-  const [nextAgeDate, setNextAgeDate] = useState<string | null>(null);
-  const [aiTip, setAiTip] = useState<string | null>(null);
-  const [isGeneratingTip, setIsGeneratingTip] = useState(false);
-
-  const handleBirthDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^0-9]/g, '');
-    let formatted = value;
-    if (value.length > 4 && value.length <= 6) {
-      formatted = value.slice(0, 4) + '-' + value.slice(4);
-    } else if (value.length > 6) {
-      formatted = value.slice(0, 4) + '-' + value.slice(4, 6) + '-' + value.slice(6, 8);
-    }
-    setBirthDate(formatted);
-  };
-
-  const calculateAge = async () => {
-    if (!birthDate || birthDate.length < 10) {
-      alert("생년월일 8자리를 정확히 입력해주세요. (예: 19800301)");
-      return;
-    }
-    
-    const birth = new Date(birthDate);
-    if (isNaN(birth.getTime())) {
-      alert("유효하지 않은 날짜입니다.");
-      return;
-    }
-    const today = new Date();
-    
-    const diffTime = Math.abs(today.getTime() - birth.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    const diffMonths = diffDays / 30.44;
-    
-    const years = Math.floor(diffMonths / 12);
-    const remainingMonths = diffMonths % 12;
-    
-    const age = remainingMonths >= 6 ? years + 1 : years;
-    setInsuranceAge(age);
-
-    const nextDate = new Date(birth);
-    nextDate.setFullYear(today.getFullYear());
-    nextDate.setMonth(birth.getMonth() + 6);
-    
-    if (nextDate < today) {
-      nextDate.setFullYear(today.getFullYear() + 1);
-    }
-    
-    setNextAgeDate(nextDate.toLocaleDateString());
-
-    // Generate AI Tip
-    const gemini = getGeminiKey();
-    const openai = getOpenAIKey();
-    if (!gemini && !openai) {
-      // Don't alert here as the primary function (age calculation) is done
-      console.warn("AI keys missing, skipping tip generation");
-      return;
-    }
-
-    setIsGeneratingTip(true);
-    try {
-      const result = await generateInsuranceAgeTip(age, birthDate);
-      setAiTip(result.tip);
-    } catch (e) {
-      console.error('AI Tip generation failed:', e);
-    } finally {
-      setIsGeneratingTip(false);
-    }
-  };
-
-  return (
-    <div className="space-y-12">
-      <div className="flex flex-col lg:flex-row gap-12">
-        <div className="flex-1 space-y-8">
-          <div className="space-y-1">
-            <h3 className="text-2xl font-black text-slate-900 flex items-center gap-3">
-              <Calculator className="w-6 h-6 text-slate-700" />
-              보험나이 계산기
-            </h3>
-            <p className="text-slate-500 text-sm font-medium">보험 가입의 기준이 되는 보험나이와 상령일을 계산합니다.</p>
-          </div>
-
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">생년월일 (8자리 입력)</label>
-              <input 
-                type="text" 
-                value={birthDate} 
-                onChange={handleBirthDateChange}
-                placeholder="예: 19800301"
-                maxLength={10}
-                className="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-slate-700/5 transition-all text-lg font-bold" 
-              />
-            </div>
-            <button 
-              onClick={calculateAge}
-              className="w-full py-5 bg-slate-900 text-white font-black text-lg rounded-2xl shadow-xl shadow-slate-900/20 active:scale-95 transition-all"
-            >
-              보험나이 계산하기
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-1 bg-slate-50 rounded-[3rem] p-10 border border-slate-100 flex flex-col justify-center items-center text-center space-y-8">
-          {insuranceAge !== null ? (
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="space-y-8 w-full">
-              <div className="space-y-2">
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">현재 보험나이</p>
-                <div className="text-7xl font-black text-slate-900 tracking-tighter">
-                  {insuranceAge}<span className="text-3xl text-slate-400 ml-1">세</span>
-                </div>
-              </div>
-              
-              <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm space-y-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400 font-bold">다음 상령일</span>
-                  <span className="text-rose-500 font-black">{nextAgeDate}</span>
-                </div>
-                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div className="bg-rose-400 h-full w-[65%]"></div>
-                </div>
-                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                  상령일이 지나면 보험료가 인상될 수 있으므로,<br />
-                  <span className="text-rose-500 font-bold">그 이전에 청약</span>을 완료하는 것이 유리합니다.
-                </p>
-              </div>
-
-              {isGeneratingTip ? (
-                <div className="w-full p-6 bg-slate-100 rounded-3xl animate-pulse flex items-center justify-center gap-2">
-                  <Clock className="w-4 h-4 text-slate-300 animate-spin" />
-                  <span className="text-xs font-bold text-slate-400">AI 맞춤 팁 분석 중...</span>
-                </div>
-              ) : aiTip && (
-                <div className="w-full p-6 bg-indigo-600 text-white rounded-3xl shadow-xl shadow-indigo-200 text-left space-y-2 relative overflow-hidden">
-                  <Sparkles className="absolute top-2 right-2 w-12 h-12 text-white/10" />
-                  <h5 className="text-[10px] font-black text-indigo-200 uppercase tracking-widest flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" /> AI 맞춤 보험 팁
-                  </h5>
-                  <p className="text-xs font-bold leading-relaxed relative z-10">{aiTip}</p>
-                </div>
-              )}
-            </motion.div>
-          ) : (
-            <div className="space-y-4">
-              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm">
-                <Calculator className="w-10 h-10 text-slate-200" />
-              </div>
-              <p className="text-slate-400 font-bold text-sm">생년월일을 입력하시면<br />보험나이가 계산됩니다.</p>
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 };

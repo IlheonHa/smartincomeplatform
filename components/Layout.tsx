@@ -26,6 +26,7 @@ interface LayoutProps {
   setActiveTab: (tab: string) => void;
   user?: User | null;
   onLogout: () => void;
+  notifications?: any[];
 }
 
 const Logo: React.FC = () => (
@@ -41,9 +42,16 @@ const Logo: React.FC = () => (
   </div>
 );
 
-const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user, onLogout }) => {
+const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user, onLogout, notifications = [] }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
   const userRole = user?.role;
+
+  const myNotifications = notifications.filter(n => 
+    !n.targetUserId || n.targetUserId === user?.id
+  ).slice(0, 10);
+  
+  const unreadCount = myNotifications.length; // For now, treat all as unread or just show count
   
   const navItems = [
     { id: 'introduction', label: 'Smart Income 소개', icon: Sparkles },
@@ -226,10 +234,70 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
               <LogOut className="w-4 h-4 group-hover:rotate-12 transition-transform" />
               <span className="text-xs hidden sm:inline">로그아웃</span>
             </button>
-            <button className="relative p-2.5 text-slate-400 hover:text-primary transition-colors group">
-              <Bell className="w-6 h-6 group-hover:rotate-12 transition-transform" />
-              <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setIsNotifOpen(!isNotifOpen)}
+                className={`relative p-2.5 transition-colors group rounded-xl ${isNotifOpen ? 'bg-slate-100 text-primary' : 'text-slate-400 hover:text-primary'}`}
+              >
+                <Bell className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+                )}
+              </button>
+
+              {/* Notification Dropdown */}
+              {isNotifOpen && (
+                <>
+                  <div className="fixed inset-0 z-20" onClick={() => setIsNotifOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-[2rem] shadow-2xl border border-slate-100 overflow-hidden z-30 animate-fade-in">
+                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                      <h3 className="text-sm font-black text-primary">알림 센터</h3>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{unreadCount} New</span>
+                    </div>
+                    <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                      {myNotifications.length === 0 ? (
+                        <div className="p-10 text-center">
+                          <Bell className="w-8 h-8 text-slate-200 mx-auto mb-3" />
+                          <p className="text-xs font-bold text-slate-400">새로운 알림이 없습니다.</p>
+                        </div>
+                      ) : (
+                        myNotifications.map((notif) => (
+                          <div key={notif.id} className="p-5 border-b border-slate-50 last:border-none hover:bg-slate-50 transition-colors">
+                            <div className="flex gap-3">
+                              <div className={`mt-1 shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
+                                notif.type === 'ERROR' ? 'bg-red-50 text-red-500' :
+                                notif.type === 'WARNING' ? 'bg-amber-50 text-amber-500' :
+                                notif.type === 'SUCCESS' ? 'bg-emerald-50 text-emerald-500' : 'bg-indigo-50 text-indigo-600'
+                              }`}>
+                                <Sparkles className="w-4 h-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-black text-primary mb-1">{notif.title}</p>
+                                <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2">{notif.message}</p>
+                                <p className="text-[9px] text-slate-300 mt-2 font-bold uppercase tracking-tighter">
+                                  {new Date(notif.createdAt).toLocaleString()}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <div className="p-4 bg-slate-50 border-t border-slate-100">
+                      <button 
+                        onClick={() => {
+                          setActiveTab('dashboard');
+                          setIsNotifOpen(false);
+                        }}
+                        className="w-full py-2.5 text-[10px] font-black text-primary hover:text-accent-dark transition-colors uppercase tracking-widest"
+                      >
+                        대시보드에서 모두 보기
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </header>
         
