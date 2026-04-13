@@ -501,7 +501,8 @@ const SmartFormBuilder: React.FC<{
     email: currentUser.loginId.includes('@') ? currentUser.loginId : currentUser.loginId + '@gmail.com',
     address: '서울특별시 강남구 테헤란로 123, 스마트빌딩 15층',
     sns: { blog: '#', instagram: '#', kakao: '#' },
-    compliance: `본 홈페이지는 보험상품 안내를 위한 광고입니다.
+    compliance: `광고 심의 및 법적 고지 (Compliance) 
+본 홈페이지는 보험상품 안내를 위한 광고입니다.
 
 (보험대리점) ○○보험대리점 (협회등록번호: XXXXX)
 (보험설계사) 보험설계사 ○○○ (협회등록번호: XXXXX)
@@ -530,8 +531,6 @@ const SmartFormBuilder: React.FC<{
 ④ 개인정보 수집 및 이용에 대한 동의를 거부할 권리가 있으며,
 동의를 거부할 경우 상담 및 서비스 이용에 제한이 있을 수 있습니다.
 
-⚠️ 추가 권장 문구 (신뢰도 + 법적 안정성 강화)
-
 본 홈페이지는 특정 보험상품의 계약 체결을 권유하기 위한 목적으로 제작되었습니다.
 보험계약 체결 전 상품설명서 및 약관을 반드시 확인하시기 바랍니다.
 
@@ -546,6 +545,8 @@ const SmartFormBuilder: React.FC<{
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
   const [currentFormId, setCurrentFormId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [requirePrivacy, setRequirePrivacy] = useState(true);
+  const [privacyAgreed, setPrivacyAgreed] = useState(false);
 
   // Load initial config if provided
   useEffect(() => {
@@ -562,6 +563,7 @@ const SmartFormBuilder: React.FC<{
       if (theme.reviews) setReviews(theme.reviews);
       if (theme.footer) setFooter(theme.footer);
       
+      setRequirePrivacy(initialConfig.requirePrivacy !== false);
       setCurrentFormId(initialConfig.id);
       setGeneratedUrl(initialConfig.url);
       setIsEditing(true);
@@ -648,6 +650,7 @@ const SmartFormBuilder: React.FC<{
         userId: currentUser.id,
         name: formName,
         fields, 
+        requirePrivacy,
         theme: {
           style: formStyle,
           hero,
@@ -686,6 +689,12 @@ const SmartFormBuilder: React.FC<{
   const handleSubmit = () => {
     const missingFields = fields.filter(f => f.required && !previewData[f.id]);
     if (missingFields.length > 0) {
+      alert(`${missingFields[0].label} 항목을 입력해주세요.`);
+      return;
+    }
+
+    if (requirePrivacy && !privacyAgreed) {
+      alert('개인정보 수집 및 이용에 동의해주세요.');
       return;
     }
 
@@ -709,7 +718,7 @@ const SmartFormBuilder: React.FC<{
     }, 1000);
   };
 
-  const [activeSettingsTab, setActiveSettingsTab] = useState<'BASIC' | 'HERO' | 'INTRO' | 'STORY' | 'PORTFOLIO' | 'REVIEWS' | 'FOOTER'>('BASIC');
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'BASIC' | 'HERO' | 'INTRO' | 'STORY' | 'PORTFOLIO' | 'REVIEWS' | 'FOOTER' | 'COMPLIANCE'>('BASIC');
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -751,9 +760,9 @@ const SmartFormBuilder: React.FC<{
           </button>
         </div>
 
-        {formStyle === 'PREMIUM' && (
+        {formStyle === 'PREMIUM' ? (
           <div className="flex gap-1 overflow-x-auto pb-2 custom-scrollbar">
-            {['BASIC', 'HERO', 'INTRO', 'STORY', 'PORTFOLIO', 'REVIEWS', 'FOOTER'].map((tab) => (
+            {['BASIC', 'HERO', 'INTRO', 'STORY', 'PORTFOLIO', 'REVIEWS', 'FOOTER', 'COMPLIANCE'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveSettingsTab(tab as any)}
@@ -764,14 +773,27 @@ const SmartFormBuilder: React.FC<{
                  tab === 'INTRO' ? '설계사소개' : 
                  tab === 'STORY' ? '브랜드스토리' : 
                  tab === 'PORTFOLIO' ? '포트폴리오' : 
-                 tab === 'REVIEWS' ? '리뷰' : '푸터'}
+                 tab === 'REVIEWS' ? '리뷰' : 
+                 tab === 'FOOTER' ? '푸터' : '심의/법적고지'}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="flex gap-1 overflow-x-auto pb-2 custom-scrollbar">
+            {['BASIC', 'COMPLIANCE'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveSettingsTab(tab as any)}
+                className={`px-2.5 py-1.5 rounded-full text-[10px] font-black whitespace-nowrap transition-all ${activeSettingsTab === tab ? 'bg-primary text-white' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+              >
+                {tab === 'BASIC' ? '기본/필드' : '심의/법적고지'}
               </button>
             ))}
           </div>
         )}
 
         <div className="space-y-6">
-          {(activeSettingsTab === 'BASIC' || formStyle === 'SIMPLE') && (
+          {activeSettingsTab === 'BASIC' && (
             <>
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -833,6 +855,21 @@ const SmartFormBuilder: React.FC<{
                     </button>
                   </motion.div>
                 ))}
+              </div>
+
+              <div className="pt-4 border-t border-slate-100">
+                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-slate-700">개인정보 수집 동의 (필수)</p>
+                    <p className="text-[10px] text-slate-400 font-medium">폼 하단에 동의 체크박스를 추가합니다.</p>
+                  </div>
+                  <button 
+                    onClick={() => setRequirePrivacy(!requirePrivacy)}
+                    className={`w-12 h-6 rounded-full p-1 transition-all ${requirePrivacy ? 'bg-primary' : 'bg-slate-200'}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-all ${requirePrivacy ? 'translate-x-6' : 'translate-x-0'}`} />
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -1166,10 +1203,15 @@ const SmartFormBuilder: React.FC<{
                   className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-bold text-slate-700"
                 />
               </div>
+            </div>
+          )}
+
+          {activeSettingsTab === 'COMPLIANCE' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">광고 심의 및 법적 고지 (Compliance)</label>
                 <textarea 
-                  rows={8}
+                  rows={15}
                   value={footer.compliance || ''}
                   onChange={(e) => setFooter({ ...footer, compliance: e.target.value })}
                   placeholder="보험업법에 따른 필수 고지 사항을 입력하세요."
@@ -1275,6 +1317,21 @@ const SmartFormBuilder: React.FC<{
                     </div>
                   ))}
                 </div>
+
+                {requirePrivacy && (
+                  <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <input 
+                      type="checkbox" 
+                      checked={privacyAgreed}
+                      onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                      className="mt-1 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" 
+                    />
+                    <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                      개인정보 수집 및 이용에 동의합니다. 수집된 정보는 상담 목적으로만 사용되며, 관련 법령에 따라 안전하게 보호됩니다.
+                    </p>
+                  </div>
+                )}
+
                 <button 
                   onClick={handleSubmit}
                   disabled={isSubmitting}
@@ -1284,6 +1341,14 @@ const SmartFormBuilder: React.FC<{
                   신청 완료
                 </button>
               </div>
+
+              {footer.compliance && (
+                <div className="w-full max-w-sm mt-8 px-4 pb-12">
+                  <div className="text-[9px] text-slate-400 leading-relaxed whitespace-pre-wrap font-medium text-center">
+                    {footer.compliance}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="min-h-full bg-white text-[#111111] font-sans">
@@ -1428,6 +1493,21 @@ const SmartFormBuilder: React.FC<{
                       </div>
                     ))}
                   </div>
+
+                  {requirePrivacy && (
+                    <div className="flex items-start gap-4 p-6 bg-slate-50 rounded-[1.5rem] border border-slate-100">
+                      <input 
+                        type="checkbox" 
+                        checked={privacyAgreed}
+                        onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                        className="mt-1.5 w-5 h-5 rounded border-slate-300 text-[#C9A96E] focus:ring-[#C9A96E]" 
+                      />
+                      <p className="text-sm text-slate-500 leading-relaxed font-medium">
+                        개인정보 수집 및 이용에 동의합니다. 수집된 정보는 상담 목적으로만 사용되며, 관련 법령에 따라 안전하게 보호됩니다.
+                      </p>
+                    </div>
+                  )}
+
                   <button className="w-full py-6 bg-[#111111] text-white font-black text-lg rounded-[2rem] shadow-2xl shadow-black/20 hover:scale-[1.02] active:scale-95 transition-all">
                     상담 신청하기
                   </button>
