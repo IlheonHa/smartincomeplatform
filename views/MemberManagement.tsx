@@ -488,6 +488,12 @@ const MemberManagement: React.FC<MemberManagementProps> = ({ users, onUpdateUser
                           <span className="w-1 h-1 rounded-full bg-slate-200"></span>
                           <span className="text-[11px] font-bold text-slate-400">{u.phone}</span>
                         </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center px-1.5 py-0.5 bg-slate-100 rounded text-[9px] font-black text-slate-500 border border-slate-200">
+                            <span className="mr-1 opacity-50">PW:</span>
+                            <span>{u.password || '****'}</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </td>
