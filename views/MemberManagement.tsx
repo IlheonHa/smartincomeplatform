@@ -218,10 +218,20 @@ const MemberManagement: React.FC<MemberManagementProps> = ({ users, onUpdateUser
   const getGradeStyle = (grade?: MembershipGrade) => {
     switch (grade) {
       case MembershipGrade.SILVER: return 'bg-slate-100 text-slate-600 border-slate-200';
-      case MembershipGrade.GOLD: return 'bg-amber-100 text-amber-600 border-amber-200';
-      case MembershipGrade.DIAMOND: return 'bg-cyan-100 text-cyan-600 border-cyan-200';
-      case MembershipGrade.PLATINUM: return 'bg-indigo-100 text-indigo-600 border-indigo-200';
-      default: return 'bg-gray-100 text-gray-500 border-gray-200';
+      case MembershipGrade.GOLD: return 'bg-amber-50 text-amber-600 border-amber-100';
+      case MembershipGrade.DIAMOND: return 'bg-cyan-50 text-cyan-600 border-cyan-100';
+      case MembershipGrade.PLATINUM: return 'bg-indigo-50 text-indigo-600 border-indigo-100';
+      default: return 'bg-gray-50 text-gray-500 border-gray-100';
+    }
+  };
+
+  const getStatusStyle = (status: SubscriptionStatus) => {
+    switch (status) {
+      case SubscriptionStatus.ACTIVE: return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+      case SubscriptionStatus.TRIAL: return 'bg-blue-50 text-blue-600 border-blue-100';
+      case SubscriptionStatus.OVERDUE: return 'bg-red-50 text-red-600 border-red-100';
+      case SubscriptionStatus.CANCELLED: return 'bg-slate-100 text-slate-500 border-slate-200';
+      default: return 'bg-gray-50 text-gray-500 border-gray-100';
     }
   };
 
@@ -426,7 +436,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({ users, onUpdateUser
       <div className="bg-white rounded-[2.5rem] border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-gray-50 border-b border-gray-100">
+            <thead className="bg-gray-50/50 border-b border-gray-100">
               <tr>
                 <th className="px-8 py-6 w-10">
                   <button 
@@ -440,23 +450,23 @@ const MemberManagement: React.FC<MemberManagementProps> = ({ users, onUpdateUser
                     )}
                   </button>
                 </th>
-                <th className="px-8 py-6 font-black uppercase tracking-wider text-[10px] text-gray-400">파트너 기본 정보</th>
-                <th className="px-8 py-6 font-black uppercase tracking-wider text-[10px] text-gray-400">실적 데이터 (콘텐츠/설계/골든/고객/상담)</th>
-                <th className="px-8 py-6 font-black uppercase tracking-wider text-[10px] text-gray-400">등급/역할</th>
-                <th className="px-8 py-6 font-black uppercase tracking-wider text-[10px] text-gray-400">구독/정산 정보</th>
-                <th className="px-8 py-6 font-black uppercase tracking-wider text-[10px] text-gray-400">계정 제어</th>
-                <th className="px-8 py-6 font-black uppercase tracking-wider text-[10px] text-gray-400 text-right">기능</th>
+                <th className="px-6 py-6 font-black uppercase tracking-wider text-[10px] text-gray-400">회원 기본 정보</th>
+                <th className="px-6 py-6 font-black uppercase tracking-wider text-[10px] text-gray-400">등급 및 권한</th>
+                <th className="px-6 py-6 font-black uppercase tracking-wider text-[10px] text-gray-400">활동 통계</th>
+                <th className="px-6 py-6 font-black uppercase tracking-wider text-[10px] text-gray-400">구독 및 상태</th>
+                <th className="px-6 py-6 font-black uppercase tracking-wider text-[10px] text-gray-400 text-right">관리</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filteredUsers.map((u) => (
                 <tr 
                   key={u.id} 
-                  className={`hover:bg-indigo-50/20 transition-colors group ${selectedUserIds.includes(u.id) ? 'bg-indigo-50/40' : ''}`}
-                  onClick={(e) => toggleUserSelection(u.id, e)}
+                  className={`hover:bg-indigo-50/30 transition-all group cursor-pointer ${selectedUserIds.includes(u.id) ? 'bg-indigo-50/50' : ''}`}
+                  onClick={() => handleOpenProfile(u)}
                 >
-                  <td className="px-8 py-5">
+                  <td className="px-8 py-5" onClick={(e) => e.stopPropagation()}>
                     <button 
+                      onClick={(e) => toggleUserSelection(u.id, e)}
                       className="text-gray-300 group-hover:text-indigo-400 transition-colors"
                     >
                       {selectedUserIds.includes(u.id) ? (
@@ -466,192 +476,101 @@ const MemberManagement: React.FC<MemberManagementProps> = ({ users, onUpdateUser
                       )}
                     </button>
                   </td>
-                  <td className="px-8 py-5" onClick={(e) => e.stopPropagation()}>
+                  <td className="px-6 py-5">
                     <div className="flex items-center space-x-4">
-                      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black border-2 ${u.role === UserRole.ADMIN ? 'bg-[#002D62] text-white border-[#001A3A] shadow-lg' : 'bg-blue-50 text-[#002D62] border-blue-100'}`}>
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg border-2 shadow-sm ${u.role === UserRole.ADMIN ? 'bg-[#002D62] text-white border-[#001A3A]' : 'bg-white text-[#002D62] border-slate-100'}`}>
                         {u.name[0]}
                       </div>
-                      <div className="space-y-1">
-                        <input 
-                          type="text" 
-                          value={u.name}
-                          onChange={(e) => updateUserInfo(u.id, 'name', e.target.value)}
-                          className="font-black text-gray-900 text-base bg-transparent border-b border-transparent focus:border-indigo-300 outline-none transition-all w-32"
-                          placeholder="이름"
-                        />
-                        <div className="flex items-center space-x-1 text-[10px] text-gray-400 font-bold tracking-tight">
-                          <span>@</span>
-                          <input 
-                            type="email" 
-                            value={u.loginId}
-                            onChange={(e) => updateUserInfo(u.id, 'loginId', e.target.value)}
-                            className={`bg-transparent border-b border-transparent focus:border-indigo-300 outline-none transition-all w-32 ${!u.loginId.toLowerCase().endsWith('@gmail.com') ? 'text-red-500' : ''}`}
-                            placeholder="example@gmail.com"
-                          />
-                          <span>·</span>
-                          <input 
-                            type="text" 
-                            value={u.phone}
-                            onChange={(e) => updateUserInfo(u.id, 'phone', e.target.value)}
-                            className="bg-transparent border-b border-transparent focus:border-indigo-300 outline-none transition-all w-28"
-                            placeholder="전화번호"
-                          />
-                        </div>
-                        <div className="flex items-center space-x-1 text-[10px] text-gray-400 font-bold tracking-tight">
-                          <span>PW:</span>
-                          <input 
-                            type="text" 
-                            value={u.password || ''}
-                            onChange={(e) => updateUserInfo(u.id, 'password', e.target.value)}
-                            className="bg-transparent border-b border-transparent focus:border-indigo-300 outline-none transition-all w-24"
-                            placeholder="비밀번호"
-                          />
-                        </div>
-                        <div className="text-[9px] text-gray-300 font-bold flex items-center space-x-1">
-                          <span>가입:</span>
-                          <input 
-                            type="text" 
-                            value={u.createdAt}
-                            onChange={(e) => updateUserInfo(u.id, 'createdAt', e.target.value)}
-                            className="bg-transparent border-none outline-none w-20"
-                          />
+                      <div className="flex flex-col">
+                        <span className="font-black text-slate-900 text-base">{u.name}</span>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[11px] font-bold text-slate-400">{u.loginId}</span>
+                          <span className="w-1 h-1 rounded-full bg-slate-200"></span>
+                          <span className="text-[11px] font-bold text-slate-400">{u.phone}</span>
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-8 py-5" onClick={(e) => e.stopPropagation()}>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between space-x-4">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">Content</span>
-                        <input 
-                          type="number" 
-                          value={u.contentGenCount || 0}
-                          onChange={(e) => updateUserNumericInfo(u.id, 'contentGenCount', e.target.value)}
-                          className="w-16 bg-gray-50 rounded px-2 py-1 text-xs font-bold text-primary outline-none focus:ring-1 focus:ring-primary/30"
-                        />
+                  <td className="px-6 py-5">
+                    <div className="flex flex-col gap-1.5">
+                      <div className={`inline-flex items-center px-2.5 py-1 rounded-lg border text-[10px] font-black w-fit ${getGradeStyle(u.grade)}`}>
+                        <Shield className="w-3 h-3 mr-1.5" />
+                        {u.grade || 'SILVER'}
                       </div>
-                      <div className="flex items-center justify-between space-x-4">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">Design</span>
-                        <input 
-                          type="number" 
-                          value={u.insuranceDesignCount || 0}
-                          onChange={(e) => updateUserNumericInfo(u.id, 'insuranceDesignCount', e.target.value)}
-                          className="w-16 bg-gray-50 rounded px-2 py-1 text-xs font-bold text-blue-500 outline-none focus:ring-1 focus:ring-blue-500/30"
-                        />
-                      </div>
-                      <div className="flex items-center justify-between space-x-4">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">Golden</span>
-                        <input 
-                          type="number" 
-                          value={u.goldenSystemCount || 0}
-                          onChange={(e) => updateUserNumericInfo(u.id, 'goldenSystemCount', e.target.value)}
-                          className="w-16 bg-gray-50 rounded px-2 py-1 text-xs font-bold text-amber-500 outline-none focus:ring-1 focus:ring-amber-500/30"
-                        />
-                      </div>
-                      <div className="flex items-center justify-between space-x-4">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">Leads</span>
-                        <input 
-                          type="number" 
-                          value={u.leadsCount || 0}
-                          onChange={(e) => updateUserNumericInfo(u.id, 'leadsCount', e.target.value)}
-                          className="w-16 bg-gray-50 rounded px-2 py-1 text-xs font-bold text-indigo-600 outline-none focus:ring-1 focus:ring-indigo-300"
-                        />
-                      </div>
-                      <div className="flex items-center justify-between space-x-4">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">Consults</span>
-                        <input 
-                          type="number" 
-                          value={u.activeConsultationsCount || 0}
-                          onChange={(e) => updateUserNumericInfo(u.id, 'activeConsultationsCount', e.target.value)}
-                          className="w-16 bg-gray-50 rounded px-2 py-1 text-xs font-bold text-blue-600 outline-none focus:ring-1 focus:ring-blue-300"
-                        />
+                      <div className="inline-flex items-center px-2.5 py-1 rounded-lg border border-slate-100 bg-slate-50 text-slate-500 text-[10px] font-black w-fit">
+                        <UserIcon className="w-3 h-3 mr-1.5" />
+                        {u.role}
                       </div>
                     </div>
                   </td>
-                  <td className="px-8 py-5" onClick={(e) => e.stopPropagation()}>
-                    <div className="space-y-2">
-                      <select
-                        value={u.grade}
-                        onChange={(e) => changeUserGrade(u.id, e.target.value as MembershipGrade)}
-                        className={`w-full text-[10px] font-black border-2 rounded-xl px-4 py-2 outline-none transition-all cursor-pointer shadow-sm ${getGradeStyle(u.grade)}`}
-                      >
-                        {Object.values(MembershipGrade).map((g) => (
-                          <option key={g} value={g}>{g}</option>
-                        ))}
-                      </select>
-                      <select
-                        value={u.role}
-                        onChange={(e) => updateUserInfo(u.id, 'role', e.target.value)}
-                        className="w-full text-[10px] font-black border-2 border-gray-100 rounded-xl px-4 py-2 outline-none bg-white cursor-pointer shadow-sm"
-                      >
-                        {Object.values(UserRole).map((r) => (
-                          <option key={r} value={r}>{r}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </td>
-                  <td className="px-8 py-5" onClick={(e) => e.stopPropagation()}>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between space-x-2">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">구독료</span>
-                        <div className="flex items-center bg-gray-50 rounded px-2 py-1">
-                          <span className="text-[10px] text-gray-400 mr-1">₩</span>
-                          <input 
-                            type="text" 
-                            value={u.monthlyFee?.toLocaleString() || '0'}
-                            onChange={(e) => updateMonthlyFee(u.id, e.target.value)}
-                            className="w-20 bg-transparent text-xs font-bold text-gray-800 outline-none"
-                          />
+                  <td className="px-6 py-5">
+                    <div className="grid grid-cols-3 gap-x-6 gap-y-2 max-w-[240px]">
+                      <div className="flex items-center gap-2">
+                        <Activity className="w-3 h-3 text-indigo-400" />
+                        <div className="flex flex-col">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase">Content</span>
+                          <span className="text-xs font-black text-slate-700">{u.contentGenCount || 0}</span>
                         </div>
                       </div>
-                      <select
-                        value={u.subscriptionStatus}
-                        onChange={(e) => changeSubscriptionStatus(u.id, e.target.value as SubscriptionStatus)}
-                        className={`w-full text-[10px] font-black border-2 rounded-xl px-4 py-2 outline-none bg-white cursor-pointer shadow-sm transition-all ${
-                          u.subscriptionStatus === SubscriptionStatus.OVERDUE ? 'border-red-200 text-red-600 bg-red-50' : 'border-gray-100 text-gray-600'
-                        }`}
-                      >
-                        {Object.values(SubscriptionStatus).map((s) => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
-                      <div className="flex items-center justify-between space-x-2">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">결제일</span>
-                        <input 
-                          type="text" 
-                          value={u.nextPaymentDate || ''}
-                          onChange={(e) => updateUserInfo(u.id, 'nextPaymentDate', e.target.value)}
-                          className="w-24 bg-gray-50 rounded px-2 py-1 text-[10px] font-bold text-gray-600 outline-none"
-                          placeholder="YYYY-MM-DD"
-                        />
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="w-3 h-3 text-blue-400" />
+                        <div className="flex flex-col">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase">Design</span>
+                          <span className="text-xs font-black text-slate-700">{u.insuranceDesignCount || 0}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="w-3 h-3 text-emerald-400" />
+                        <div className="flex flex-col">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase">Revenue</span>
+                          <span className="text-xs font-black text-slate-700">₩{(u.revenueGenerated || 0).toLocaleString()}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <UserIcon className="w-3 h-3 text-amber-400" />
+                        <div className="flex flex-col">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase">Leads</span>
+                          <span className="text-xs font-black text-slate-700">{u.leadsCount || 0}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-3 h-3 text-rose-400" />
+                        <div className="flex flex-col">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase">Consults</span>
+                          <span className="text-xs font-black text-slate-700">{u.activeConsultationsCount || 0}</span>
+                        </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-8 py-5" onClick={(e) => e.stopPropagation()}>
-                    <button 
-                      onClick={() => toggleUserStatus(u.id)}
-                      className={`px-4 py-2 rounded-xl text-[10px] font-black border-2 transition-all shadow-sm ${u.isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'}`}
-                    >
-                      {u.isActive ? 'ACTIVE' : 'SUSPENDED'}
-                    </button>
+                  <td className="px-6 py-5">
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className={`px-2.5 py-1 rounded-lg border text-[10px] font-black ${getStatusStyle(u.subscriptionStatus || SubscriptionStatus.TRIAL)}`}>
+                          {u.subscriptionStatus || 'TRIAL'}
+                        </div>
+                        <div className={`w-2 h-2 rounded-full ${u.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></div>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black text-slate-700">₩{(u.monthlyFee || 0).toLocaleString()}</span>
+                        <span className="text-[10px] font-bold text-slate-400">Next: {u.nextPaymentDate || 'N/A'}</span>
+                      </div>
+                    </div>
                   </td>
-                  <td className="px-8 py-5 text-right" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center justify-end space-x-2 transition-all">
+                  <td className="px-6 py-5 text-right" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-2">
                       <button 
-                        type="button"
-                        onClick={(e) => handleOpenProfile(u)}
-                        className="p-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-2xl transition-colors shadow-sm" 
-                        title="상세 프로필"
+                        onClick={() => handleOpenProfile(u)}
+                        className="p-2.5 bg-slate-50 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-xl transition-all border border-slate-100"
+                        title="상세 보기"
                       >
-                        👤
+                        <ChevronRight className="w-4 h-4" />
                       </button>
                       <button 
-                        type="button"
                         onClick={(e) => handleDeleteClick(e, u)}
-                        className="p-2.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-2xl transition-colors shadow-sm"
-                        title="영구 삭제"
+                        className="p-2.5 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition-all border border-slate-100"
+                        title="삭제"
                       >
-                        🗑️
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </td>
