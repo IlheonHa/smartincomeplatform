@@ -508,21 +508,52 @@ const PublicFormView: React.FC = () => {
                 ))}
               </div>
 
-              <div className="space-y-6">
-                {formConfig.requirePrivacy !== false && (
-                  <div className="flex items-start gap-4 p-6 bg-slate-50 rounded-[1.5rem] border border-slate-100">
-                    <input 
-                      type="checkbox" 
-                      required 
-                      checked={privacyAgreed}
-                      onChange={(e) => setPrivacyAgreed(e.target.checked)}
-                      className="mt-1.5 w-5 h-5 rounded border-slate-300 text-[#C9A96E] focus:ring-[#C9A96E]" 
-                    />
-                    <p className="text-sm text-slate-500 leading-relaxed font-medium">
-                      개인정보 수집 및 이용에 동의합니다. 수집된 정보는 상담 목적으로만 사용되며, 관련 법령에 따라 안전하게 보호됩니다.
-                    </p>
-                  </div>
-                )}
+                <div className="space-y-6">
+                  {formConfig.requirePrivacy !== false && (
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-4 p-6 bg-slate-50 rounded-[1.5rem] border border-slate-100">
+                        <input 
+                          type="checkbox" 
+                          required 
+                          checked={privacyAgreed}
+                          onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                          className="mt-1.5 w-5 h-5 rounded border-slate-300 text-[#C9A96E] focus:ring-[#C9A96E]" 
+                        />
+                        <p className="text-sm text-slate-500 leading-relaxed font-medium">
+                          개인정보 수집 및 이용에 동의합니다. 수집된 정보는 상담 목적으로만 사용되며, 관련 법령에 따라 안전하게 보호됩니다.
+                        </p>
+                      </div>
+                      <div className="p-6 bg-slate-50/50 rounded-[1.5rem] border border-slate-100/50">
+                        <div className="text-[11px] text-slate-400 leading-relaxed whitespace-pre-wrap font-medium">
+                          [개인정보 수집 및 이용 동의]
+
+귀하는 개인정보 수집 및 이용 동의를 거부할 권리가 있습니다. 다만, 동의 거부 시 원활한 상담 서비스 제공이 제한될 수 있습니다.
+
+수집하는 개인정보 항목
+성함, 연락처
+
+수집 및 이용 목적
+보험 보장분석 및 상담 서비스 제공
+
+보유 및 이용기간
+상담 종료 후 1년 이내 또는 이용자 요청 시 즉시 파기
+
+[개인정보 수집 및 이용 안내]
+① 개인정보의 수집 · 이용 목적
+보험 상담, 보험상품 안내, 계약 체결 및 유지관리
+
+② 수집하는 개인정보 항목
+성명, 연락처, 상담내용 등
+
+③ 개인정보 보유 및 이용 기간
+수집 · 이용 목적 달성 시까지 또는 관련 법령에 따른 보관기간까지
+
+④ 거부 권리 안내
+개인정보 수집 및 이용에 대한 동의를 거부할 권리가 있으며, 동의를 거부할 경우 상담 및 서비스 이용에 제한이 있을 수 있습니다.
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                 <button 
                   type="submit"
@@ -653,17 +684,48 @@ const PublicFormView: React.FC = () => {
 
             <div className="space-y-4 pt-4">
               {formConfig.requirePrivacy !== false && (
-                <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                  <input 
-                    type="checkbox" 
-                    required 
-                    checked={privacyAgreed}
-                    onChange={(e) => setPrivacyAgreed(e.target.checked)}
-                    className="mt-1 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" 
-                  />
-                  <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                    개인정보 수집 및 이용에 동의합니다. 수집된 정보는 상담 목적으로만 사용되며, 관련 법령에 따라 안전하게 보호됩니다.
-                  </p>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <input 
+                      type="checkbox" 
+                      required 
+                      checked={privacyAgreed}
+                      onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                      className="mt-1 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" 
+                    />
+                    <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                      개인정보 수집 및 이용에 동의합니다. 수집된 정보는 상담 목적으로만 사용되며, 관련 법령에 따라 안전하게 보호됩니다.
+                    </p>
+                  </div>
+                  <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100/50">
+                    <div className="text-[9px] text-slate-400 leading-relaxed whitespace-pre-wrap font-medium">
+                      [개인정보 수집 및 이용 동의]
+
+귀하는 개인정보 수집 및 이용 동의를 거부할 권리가 있습니다. 다만, 동의 거부 시 원활한 상담 서비스 제공이 제한될 수 있습니다.
+
+수집하는 개인정보 항목
+성함, 연락처
+
+수집 및 이용 목적
+보험 보장분석 및 상담 서비스 제공
+
+보유 및 이용기간
+상담 종료 후 1년 이내 또는 이용자 요청 시 즉시 파기
+
+[개인정보 수집 및 이용 안내]
+① 개인정보의 수집 · 이용 목적
+보험 상담, 보험상품 안내, 계약 체결 및 유지관리
+
+② 수집하는 개인정보 항목
+성명, 연락처, 상담내용 등
+
+③ 개인정보 보유 및 이용 기간
+수집 · 이용 목적 달성 시까지 또는 관련 법령에 따른 보관기간까지
+
+④ 거부 권리 안내
+개인정보 수집 및 이용에 대한 동의를 거부할 권리가 있으며, 동의를 거부할 경우 상담 및 서비스 이용에 제한이 있을 수 있습니다.
+                    </div>
+                  </div>
                 </div>
               )}
 
