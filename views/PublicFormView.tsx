@@ -124,7 +124,11 @@ const PublicFormView: React.FC = () => {
       return;
     }
 
-    if (formConfig.requirePrivacy !== false && !privacyAgreed) {
+    const isPrivacyRequired = formConfig.theme?.requirePrivacy !== undefined 
+      ? formConfig.theme.requirePrivacy 
+      : (formConfig.requirePrivacy !== undefined ? formConfig.requirePrivacy : true);
+
+    if (isPrivacyRequired && !privacyAgreed) {
       alert('개인정보 수집 및 이용에 동의해주세요.');
       return;
     }
@@ -509,7 +513,12 @@ const PublicFormView: React.FC = () => {
               </div>
 
                 <div className="space-y-6">
-                  {formConfig.requirePrivacy !== false && (
+                {(() => {
+                  const isPrivacyRequired = formConfig.theme?.requirePrivacy !== undefined 
+                    ? formConfig.theme.requirePrivacy 
+                    : (formConfig.requirePrivacy !== undefined ? formConfig.requirePrivacy : true);
+                  
+                  return isPrivacyRequired && (
                     <div className="space-y-4">
                       <div className="flex items-start gap-4 p-6 bg-slate-50 rounded-[1.5rem] border border-slate-100">
                         <input 
@@ -553,7 +562,8 @@ const PublicFormView: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                  )}
+                  );
+                })()}
 
                 <button 
                   type="submit"
@@ -683,23 +693,28 @@ const PublicFormView: React.FC = () => {
             </div>
 
             <div className="space-y-4 pt-4">
-              {formConfig.requirePrivacy !== false && (
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <input 
-                      type="checkbox" 
-                      required 
-                      checked={privacyAgreed}
-                      onChange={(e) => setPrivacyAgreed(e.target.checked)}
-                      className="mt-1 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" 
-                    />
-                    <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                      개인정보 수집 및 이용에 동의합니다. 수집된 정보는 상담 목적으로만 사용되며, 관련 법령에 따라 안전하게 보호됩니다.
-                    </p>
-                  </div>
-                  <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100/50">
-                    <div className="text-[9px] text-slate-400 leading-relaxed whitespace-pre-wrap font-medium">
-                      [개인정보 수집 및 이용 동의]
+              {(() => {
+                const isPrivacyRequired = formConfig.theme?.requirePrivacy !== undefined 
+                  ? formConfig.theme.requirePrivacy 
+                  : (formConfig.requirePrivacy !== undefined ? formConfig.requirePrivacy : true);
+                
+                return isPrivacyRequired && (
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                      <input 
+                        type="checkbox" 
+                        required 
+                        checked={privacyAgreed}
+                        onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                        className="mt-1 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary" 
+                      />
+                      <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                        개인정보 수집 및 이용에 동의합니다. 수집된 정보는 상담 목적으로만 사용되며, 관련 법령에 따라 안전하게 보호됩니다.
+                      </p>
+                    </div>
+                    <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100/50">
+                      <div className="text-[9px] text-slate-400 leading-relaxed whitespace-pre-wrap font-medium">
+                        [개인정보 수집 및 이용 동의]
 
 귀하는 개인정보 수집 및 이용 동의를 거부할 권리가 있습니다. 다만, 동의 거부 시 원활한 상담 서비스 제공이 제한될 수 있습니다.
 
@@ -724,10 +739,11 @@ const PublicFormView: React.FC = () => {
 
 ④ 거부 권리 안내
 개인정보 수집 및 이용에 대한 동의를 거부할 권리가 있으며, 동의를 거부할 경우 상담 및 서비스 이용에 제한이 있을 수 있습니다.
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               <button 
                 type="submit"

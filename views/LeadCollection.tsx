@@ -563,7 +563,11 @@ const SmartFormBuilder: React.FC<{
       if (theme.reviews) setReviews(theme.reviews);
       if (theme.footer) setFooter(theme.footer);
       
-      setRequirePrivacy(initialConfig.requirePrivacy !== false);
+      // Handle requirePrivacy from both top-level (legacy) and theme (new)
+      const reqPriv = theme.requirePrivacy !== undefined 
+        ? theme.requirePrivacy 
+        : (initialConfig.requirePrivacy !== undefined ? initialConfig.requirePrivacy : true);
+      setRequirePrivacy(reqPriv);
       setCurrentFormId(initialConfig.id);
       setGeneratedUrl(initialConfig.url);
       setIsEditing(true);
@@ -650,9 +654,9 @@ const SmartFormBuilder: React.FC<{
         userId: currentUser.id,
         name: formName,
         fields, 
-        requirePrivacy,
         theme: {
           style: formStyle,
+          requirePrivacy,
           hero,
           intro,
           story,
