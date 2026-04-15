@@ -215,6 +215,14 @@ const MemberManagement: React.FC<MemberManagementProps> = ({ users, onUpdateUser
       alert('회원 정보가 성공적으로 수정되었습니다.');
     }
   };
+
+  const handleToggleActive = (user: User, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onUpdateUser({
+      ...user,
+      isActive: !user.isActive
+    });
+  };
   const getGradeStyle = (grade?: MembershipGrade) => {
     switch (grade) {
       case MembershipGrade.SILVER: return 'bg-slate-100 text-slate-600 border-slate-200';
@@ -435,10 +443,10 @@ const MemberManagement: React.FC<MemberManagementProps> = ({ users, onUpdateUser
       {/* Enhanced Table */}
       <div className="bg-white rounded-[2.5rem] border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
+          <table className="w-full text-left text-[13px] whitespace-nowrap">
             <thead className="bg-gray-50/50 border-b border-gray-100">
               <tr>
-                <th className="px-8 py-6 w-10">
+                <th className="px-4 py-4 w-10">
                   <button 
                     onClick={toggleSelectAll}
                     className="text-gray-400 hover:text-indigo-600 transition-colors"
@@ -450,11 +458,16 @@ const MemberManagement: React.FC<MemberManagementProps> = ({ users, onUpdateUser
                     )}
                   </button>
                 </th>
-                <th className="px-6 py-6 font-black uppercase tracking-wider text-[10px] text-gray-400">회원 기본 정보</th>
-                <th className="px-6 py-6 font-black uppercase tracking-wider text-[10px] text-gray-400">등급 및 권한</th>
-                <th className="px-6 py-6 font-black uppercase tracking-wider text-[10px] text-gray-400">활동 통계</th>
-                <th className="px-6 py-6 font-black uppercase tracking-wider text-[10px] text-gray-400">구독 및 상태</th>
-                <th className="px-6 py-6 font-black uppercase tracking-wider text-[10px] text-gray-400 text-right">관리</th>
+                <th className="px-3 py-4 font-black uppercase tracking-wider text-[10px] text-gray-400">Member Name</th>
+                <th className="px-3 py-4 font-black uppercase tracking-wider text-[10px] text-gray-400">Login ID (Gmail)</th>
+                <th className="px-3 py-4 font-black uppercase tracking-wider text-[10px] text-gray-400">Password</th>
+                <th className="px-3 py-4 font-black uppercase tracking-wider text-[10px] text-gray-400">Phone Number</th>
+                <th className="px-3 py-4 font-black uppercase tracking-wider text-[10px] text-gray-400">Initial Grade</th>
+                <th className="px-3 py-4 font-black uppercase tracking-wider text-[10px] text-gray-400">Role</th>
+                <th className="px-3 py-4 font-black uppercase tracking-wider text-[10px] text-gray-400">Subscription</th>
+                <th className="px-3 py-4 font-black uppercase tracking-wider text-[10px] text-gray-400">Monthly Fee</th>
+                <th className="px-3 py-4 font-black uppercase tracking-wider text-[10px] text-gray-400">Status</th>
+                <th className="px-4 py-4 font-black uppercase tracking-wider text-[10px] text-gray-400 text-right">Manage</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -464,7 +477,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({ users, onUpdateUser
                   className={`hover:bg-indigo-50/30 transition-all group cursor-pointer ${selectedUserIds.includes(u.id) ? 'bg-indigo-50/50' : ''}`}
                   onClick={() => handleOpenProfile(u)}
                 >
-                  <td className="px-8 py-5" onClick={(e) => e.stopPropagation()}>
+                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     <button 
                       onClick={(e) => toggleUserSelection(u.id, e)}
                       className="text-gray-300 group-hover:text-indigo-400 transition-colors"
@@ -476,104 +489,67 @@ const MemberManagement: React.FC<MemberManagementProps> = ({ users, onUpdateUser
                       )}
                     </button>
                   </td>
-                  <td className="px-6 py-5">
-                    <div className="flex items-center space-x-4">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg border-2 shadow-sm ${u.role === UserRole.ADMIN ? 'bg-[#002D62] text-white border-[#001A3A]' : 'bg-white text-[#002D62] border-slate-100'}`}>
+                  <td className="px-3 py-3">
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-[11px] border shadow-sm ${u.role === UserRole.ADMIN ? 'bg-[#002D62] text-white border-[#001A3A]' : 'bg-white text-[#002D62] border-slate-100'}`}>
                         {u.name[0]}
                       </div>
-                      <div className="flex flex-col">
-                        <span className="font-black text-slate-900 text-base">{u.name}</span>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[11px] font-bold text-slate-400">{u.loginId}</span>
-                          <span className="w-1 h-1 rounded-full bg-slate-200"></span>
-                          <span className="text-[11px] font-bold text-slate-400">{u.phone}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <div className="flex items-center px-1.5 py-0.5 bg-slate-100 rounded text-[9px] font-black text-slate-500 border border-slate-200">
-                            <span className="mr-1 opacity-50">PW:</span>
-                            <span>{u.password || '****'}</span>
-                          </div>
-                        </div>
-                      </div>
+                      <span className="font-black text-slate-900 text-[13px]">{u.name}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-5">
-                    <div className="flex flex-col gap-1.5">
-                      <div className={`inline-flex items-center px-2.5 py-1 rounded-lg border text-[10px] font-black w-fit ${getGradeStyle(u.grade)}`}>
-                        <Shield className="w-3 h-3 mr-1.5" />
-                        {u.grade || 'SILVER'}
-                      </div>
-                      <div className="inline-flex items-center px-2.5 py-1 rounded-lg border border-slate-100 bg-slate-50 text-slate-500 text-[10px] font-black w-fit">
-                        <UserIcon className="w-3 h-3 mr-1.5" />
-                        {u.role}
-                      </div>
+                  <td className="px-3 py-3">
+                    <span className="text-[12px] font-bold text-slate-500">{u.loginId}</span>
+                  </td>
+                  <td className="px-3 py-3">
+                    <div className="px-2 py-0.5 bg-slate-50 rounded border border-slate-100 text-[10px] font-black text-slate-600 w-fit">
+                      {u.password || '****'}
                     </div>
                   </td>
-                  <td className="px-6 py-5">
-                    <div className="grid grid-cols-3 gap-x-6 gap-y-2 max-w-[240px]">
-                      <div className="flex items-center gap-2">
-                        <Activity className="w-3 h-3 text-indigo-400" />
-                        <div className="flex flex-col">
-                          <span className="text-[9px] font-bold text-slate-400 uppercase">Content</span>
-                          <span className="text-xs font-black text-slate-700">{u.contentGenCount || 0}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="w-3 h-3 text-blue-400" />
-                        <div className="flex flex-col">
-                          <span className="text-[9px] font-bold text-slate-400 uppercase">Design</span>
-                          <span className="text-xs font-black text-slate-700">{u.insuranceDesignCount || 0}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="w-3 h-3 text-emerald-400" />
-                        <div className="flex flex-col">
-                          <span className="text-[9px] font-bold text-slate-400 uppercase">Revenue</span>
-                          <span className="text-xs font-black text-slate-700">₩{(u.revenueGenerated || 0).toLocaleString()}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <UserIcon className="w-3 h-3 text-amber-400" />
-                        <div className="flex flex-col">
-                          <span className="text-[9px] font-bold text-slate-400 uppercase">Leads</span>
-                          <span className="text-xs font-black text-slate-700">{u.leadsCount || 0}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <AlertCircle className="w-3 h-3 text-rose-400" />
-                        <div className="flex flex-col">
-                          <span className="text-[9px] font-bold text-slate-400 uppercase">Consults</span>
-                          <span className="text-xs font-black text-slate-700">{u.activeConsultationsCount || 0}</span>
-                        </div>
-                      </div>
+                  <td className="px-3 py-3">
+                    <span className="text-[12px] font-bold text-slate-500">{u.phone}</span>
+                  </td>
+                  <td className="px-3 py-3">
+                    <div className={`inline-flex items-center px-2 py-0.5 rounded-lg border text-[10px] font-black w-fit ${getGradeStyle(u.grade)}`}>
+                      <Shield className="w-3 h-3 mr-1" />
+                      {u.grade || 'SILVER'}
                     </div>
                   </td>
-                  <td className="px-6 py-5">
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-2">
-                        <div className={`px-2.5 py-1 rounded-lg border text-[10px] font-black ${getStatusStyle(u.subscriptionStatus || SubscriptionStatus.TRIAL)}`}>
-                          {u.subscriptionStatus || 'TRIAL'}
-                        </div>
-                        <div className={`w-2 h-2 rounded-full ${u.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></div>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-xs font-black text-slate-700">₩{(u.monthlyFee || 0).toLocaleString()}</span>
-                        <span className="text-[10px] font-bold text-slate-400">Next: {u.nextPaymentDate || 'N/A'}</span>
-                      </div>
+                  <td className="px-3 py-3">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{u.role}</span>
+                  </td>
+                  <td className="px-3 py-3">
+                    <div className={`inline-flex items-center px-2 py-0.5 rounded-lg border text-[10px] font-black w-fit ${getStatusStyle(u.subscriptionStatus || SubscriptionStatus.TRIAL)}`}>
+                      {u.subscriptionStatus || 'TRIAL'}
                     </div>
                   </td>
-                  <td className="px-6 py-5 text-right" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center justify-end gap-2">
+                  <td className="px-3 py-3">
+                    <span className="text-[13px] font-black text-slate-700">₩{(u.monthlyFee || 0).toLocaleString()}</span>
+                  </td>
+                  <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={(e) => handleToggleActive(u, e)}
+                        className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none ${u.isActive ? 'bg-emerald-500' : 'bg-slate-200'}`}
+                      >
+                        <span className={`inline-block h-2.5 w-2.5 transform rounded-full bg-white transition-transform ${u.isActive ? 'translate-x-4.5' : 'translate-x-1'}`} />
+                      </button>
+                      <span className={`text-[10px] font-black ${u.isActive ? 'text-emerald-600' : 'text-slate-400'}`}>
+                        {u.isActive ? '사용' : '정지'}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-1">
                       <button 
                         onClick={() => handleOpenProfile(u)}
-                        className="p-2.5 bg-slate-50 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-xl transition-all border border-slate-100"
+                        className="p-1.5 bg-slate-50 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-lg transition-all border border-slate-100"
                         title="상세 보기"
                       >
                         <ChevronRight className="w-4 h-4" />
                       </button>
                       <button 
                         onClick={(e) => handleDeleteClick(e, u)}
-                        className="p-2.5 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition-all border border-slate-100"
+                        className="p-1.5 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-all border border-slate-100"
                         title="삭제"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -823,23 +799,51 @@ const MemberManagement: React.FC<MemberManagementProps> = ({ users, onUpdateUser
                   
                   <div className="flex items-center space-x-3 mt-4">
                     {isEditingProfile ? (
-                      <select 
-                        value={editedUser.grade}
-                        onChange={(e) => setEditedUser({...editedUser, grade: e.target.value as MembershipGrade})}
-                        className="bg-white/10 border border-white/30 rounded-lg px-2 py-1 text-[10px] font-black outline-none"
-                      >
-                        {Object.values(MembershipGrade).map(g => <option key={g} value={g} className="text-gray-900">{g}</option>)}
-                      </select>
+                      <div className="flex gap-2">
+                        <select 
+                          value={editedUser.role}
+                          onChange={(e) => setEditedUser({...editedUser, role: e.target.value as UserRole})}
+                          className="bg-white/10 border border-white/30 rounded-lg px-2 py-1 text-[10px] font-black outline-none"
+                        >
+                          {Object.values(UserRole).map(r => <option key={r} value={r} className="text-gray-900">{r}</option>)}
+                        </select>
+                        <select 
+                          value={editedUser.grade}
+                          onChange={(e) => setEditedUser({...editedUser, grade: e.target.value as MembershipGrade})}
+                          className="bg-white/10 border border-white/30 rounded-lg px-2 py-1 text-[10px] font-black outline-none"
+                        >
+                          {Object.values(MembershipGrade).map(g => <option key={g} value={g} className="text-gray-900">{g}</option>)}
+                        </select>
+                        <select 
+                          value={editedUser.subscriptionStatus}
+                          onChange={(e) => setEditedUser({...editedUser, subscriptionStatus: e.target.value as SubscriptionStatus})}
+                          className="bg-white/10 border border-white/30 rounded-lg px-2 py-1 text-[10px] font-black outline-none"
+                        >
+                          {Object.values(SubscriptionStatus).map(s => <option key={s} value={s} className="text-gray-900">{s}</option>)}
+                        </select>
+                      </div>
                     ) : (
                       <p className="text-indigo-100 font-bold opacity-80 uppercase tracking-widest text-xs">
-                        {editedUser.role} · {editedUser.grade || 'NO GRADE'}
+                        {editedUser.role} · {editedUser.grade || 'NO GRADE'} · {editedUser.subscriptionStatus}
                       </p>
                     )}
                     
                     <span className={`px-3 py-1 rounded-full text-[10px] font-black ${editedUser.isActive ? 'bg-emerald-400 text-emerald-950' : 'bg-red-400 text-red-950'}`}>
                       {editedUser.isActive ? 'ACTIVE' : 'SUSPENDED'}
                     </span>
-                    <span className="text-[10px] font-bold text-indigo-200">ID: {editedUser.loginId}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-indigo-200 uppercase">ID:</span>
+                      {isEditingProfile ? (
+                        <input 
+                          type="email"
+                          value={editedUser.loginId}
+                          onChange={(e) => setEditedUser({...editedUser, loginId: e.target.value})}
+                          className="text-[10px] font-bold text-white bg-white/10 border-b border-white/30 outline-none px-1"
+                        />
+                      ) : (
+                        <span className="text-[10px] font-bold text-indigo-200">{editedUser.loginId}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
