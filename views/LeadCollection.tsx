@@ -42,9 +42,11 @@ import {
   UserCheck,
   Link,
   ClipboardList,
-  Image as ImageIcon
+  Image as ImageIcon,
+  QrCode
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { QRCodeCanvas } from 'qrcode.react';
 import { User, UserRole, Lead, LeadStatus } from '../types';
 import { supabase } from '../src/lib/supabase';
 import { 
@@ -1691,6 +1693,77 @@ const LeadDetailModal: React.FC<{ lead: any; onClose: () => void; onGoToCRM: () 
   );
 };
 
+const QRCodeModal: React.FC<{
+  url: string;
+  name: string;
+  onClose: () => void;
+}> = ({ url, name, onClose }) => {
+  const qrRef = useRef<HTMLDivElement>(null);
+
+  const downloadQRCode = () => {
+    const canvas = qrRef.current?.querySelector('canvas');
+    if (!canvas) return;
+    
+    const pngUrl = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+    let downloadLink = document.createElement("a");
+    downloadLink.href = pngUrl;
+    downloadLink.download = `QR_${name}.png`;
+    downloadLink.click();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden p-8 space-y-8"
+      >
+        <div className="flex justify-between items-center">
+          <h3 className="text-xl font-bold text-slate-900">QR 코드 생성</h3>
+          <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-xl transition-colors">
+            <X className="w-5 h-5 text-slate-400" />
+          </button>
+        </div>
+        
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div ref={qrRef} className="p-6 bg-white rounded-[2rem] border-4 border-slate-50 shadow-inner">
+            <QRCodeCanvas 
+              value={url} 
+              size={200}
+              level="H"
+              includeMargin={true}
+            />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-bold text-slate-800">{name}</p>
+            <p className="text-[10px] text-slate-400 mt-1 truncate max-w-[250px]">{url}</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <button 
+            onClick={downloadQRCode}
+            className="w-full py-4 bg-slate-900 text-white rounded-2xl text-sm font-bold hover:bg-black transition-all shadow-lg flex items-center justify-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            <span>QR 코드 이미지 저장</span>
+          </button>
+          <button 
+            onClick={() => {
+              navigator.clipboard.writeText(url);
+              alert('URL이 복사되었습니다.');
+            }}
+            className="w-full py-4 bg-slate-50 text-slate-600 rounded-2xl text-sm font-bold border border-slate-100 hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
+          >
+            <Copy className="w-4 h-4" />
+            <span>URL 복사하기</span>
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 // --- Main Component ---
 
 const LeadCollection: React.FC<{
@@ -1731,6 +1804,7 @@ const LeadCollection: React.FC<{
   const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
   const [leadSearchTerm, setLeadSearchTerm] = useState('');
   const [leadFilterSource, setLeadFilterSource] = useState<string | null>(null);
+  const [qrCodeData, setQrCodeData] = useState<{ url: string; name: string } | null>(null);
 
   const leads = (isAdmin ? allLeads : allLeads.filter(l => l.userId === currentUser.id))
     .filter(l => {
@@ -2126,8 +2200,16 @@ const LeadCollection: React.FC<{
                           alert('URL이 복사되었습니다.');
                         }}
                         className="p-1.5 text-slate-400 hover:text-primary transition-colors"
+                        title="URL 복사"
                       >
                         <Copy className="w-3 h-3" />
+                      </button>
+                      <button 
+                        onClick={() => setQrCodeData({ url: config.url, name: config.name })}
+                        className="p-1.5 text-slate-400 hover:text-primary transition-colors"
+                        title="QR 코드 보기"
+                      >
+                        <QrCode className="w-3 h-3" />
                       </button>
                     </div>
                   </div>
@@ -2435,6 +2517,17 @@ const LeadCollection: React.FC<{
               setSelectedLead(null);
               setActiveTab('crm');
             }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* QR Code Modal */}
+      <AnimatePresence>
+        {qrCodeData && (
+          <QRCodeModal 
+            url={qrCodeData.url}
+            name={qrCodeData.name}
+            onClose={() => setQrCodeData(null)}
           />
         )}
       </AnimatePresence>
