@@ -1425,3 +1425,160 @@ export const generateGoldenBlogPost = async (data: {
     imagePrompts: Array.isArray(result.imagePrompts) ? result.imagePrompts : ["blogging", "writing", "creativity"]
   };
 };
+
+export const analyzeGoldenKeywords = async (data: {
+  topic: string;
+  age?: string;
+  purpose: string;
+}) => {
+  checkAIAvailability();
+  const prompt = `
+  당신은 대한민국 SEO 및 블로그 수익화에 특화된 “황금 키워드 분석 전문가 AI”입니다.
+  당신의 역할은 단순 키워드 나열이 아니라, 검색량 대비 경쟁이 낮고, 수익 전환 가능성이 높은 “황금 키워드”를 발굴하는 것입니다.
+
+  [입력값]
+  - 주제: ${data.topic}
+  - 타겟 연령대: ${data.age || '전연령'}
+  - 목적: ${data.purpose}
+
+  [규칙]
+  1. 모든 출력은 반드시 "한국어"로 작성
+  2. 타겟: 대한민국 10~60대 사용자
+  3. 네이버, DAUM, Google 검색 환경 기준으로 분석
+  4. 블로그 수익화를 최우선 목표로 함 (쿠팡 파트너스, 애드센스, 서비스 판매 등)
+  5. 절대 글 작성하지 말 것 (키워드만 출력)
+  6. 현실적인 SEO 기준 유지
+  7. 무조건 “수익 가능성” 중심으로 판단
+
+  [분석 프로세스]
+  ① 주제 분석: 핵심 개념 분해, 관련 하위 주제 도출, 한국 사용자 검색 패턴 반영
+  ② 키워드 확장: 주요 키워드, 보조 키워드, 롱테일 키워드, 구매 의도 키워드, 감성 키워드, 질문형 키워드
+  ③ 황금 키워드 필터링: 검색량 중간 이상, 경쟁 강도 중 또는 하, 전환 가능성 높음, 네이버 노출 가능성 고려
+
+  [메타데이터 항목]
+  - 유형: 단일어 / 복합어 / 문구형 / 질문형
+  - 검색 의도: 정보형 / 거래형 / 상업형 / 탐색형
+  - 경쟁 강도: 상 / 중 / 하
+  - 검색량: 매우 높음 / 높음 / 중간 / 낮음
+  - 계절성: 연중 / 시즌 / 이벤트
+  - 수익성: 매우 높음 / 높음 / 중간 / 낮음
+
+  결과는 반드시 다음 구조의 JSON 객체여야 합니다:
+  {
+    "keywords": [
+      {
+        "keyword": "키워드명 (총 15~25개)",
+        "category": "세부 카테고리",
+        "type": "유형",
+        "intent": "검색 의도",
+        "competition": "상/중/하",
+        "searchVolume": "검색량",
+        "seasonality": "계절성",
+        "profitability": "수익성",
+        "age": "연령 적합성",
+        "google": "Google인기",
+        "naver": "네이버인기",
+        "daum": "DAUM인기"
+      }
+    ],
+    "top5": [
+      { "keyword": "키워드", "reason": "추천 이유", "revenuePotential": "수익 연결 가능성 설명" }
+    ],
+    "top3Combinations": [
+      { "combination": "[타겟] + [핵심 키워드] + [수익 키워드] + [감성 키워드] 형식" }
+    ],
+    "blogTitles": ["키워드 목록 (실제 제목 제작용)"]
+  }
+  `;
+
+  const openaiKey = getOpenAIKey();
+  if (openaiKey) {
+    try {
+      const resp = await callOpenAI({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: "당신은 상위 1% 블로그 마케팅 전문가이자 SEO 전문가입니다. 반드시 JSON 형식으로 응답하세요." },
+          { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" }
+      });
+      const parsed = safeJsonParse(resp.choices[0].message.content);
+      return {
+        keywords: Array.isArray(parsed.keywords) ? parsed.keywords : [],
+        top5: Array.isArray(parsed.top5) ? parsed.top5 : [],
+        top3Combinations: Array.isArray(parsed.top3Combinations) ? parsed.top3Combinations : [],
+        blogTitles: Array.isArray(parsed.blogTitles) ? parsed.blogTitles : []
+      };
+    } catch (error) {
+      console.error("OpenAI Error:", error);
+      if (!getGeminiKey()) throw error;
+    }
+  }
+
+  const ai = getAI();
+  if (!ai) throw new Error("Gemini API key is missing.");
+
+  const response = await callGemini(ai, 'gemini-3.1-pro-preview', {
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          keywords: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                keyword: { type: Type.STRING },
+                category: { type: Type.STRING },
+                type: { type: Type.STRING },
+                intent: { type: Type.STRING },
+                competition: { type: Type.STRING },
+                searchVolume: { type: Type.STRING },
+                seasonality: { type: Type.STRING },
+                profitability: { type: Type.STRING },
+                age: { type: Type.STRING },
+                google: { type: Type.STRING },
+                naver: { type: Type.STRING },
+                daum: { type: Type.STRING }
+              }
+            }
+          },
+          top5: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                keyword: { type: Type.STRING },
+                reason: { type: Type.STRING },
+                revenuePotential: { type: Type.STRING }
+              }
+            }
+          },
+          top3Combinations: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                combination: { type: Type.STRING }
+              }
+            }
+          },
+          blogTitles: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          }
+        }
+      }
+    }
+  });
+
+  const parsed = safeJsonParse(response.text);
+  return {
+    keywords: Array.isArray(parsed.keywords) ? parsed.keywords : [],
+    top5: Array.isArray(parsed.top5) ? parsed.top5 : [],
+    top3Combinations: Array.isArray(parsed.top3Combinations) ? parsed.top3Combinations : [],
+    blogTitles: Array.isArray(parsed.blogTitles) ? parsed.blogTitles : []
+  };
+};

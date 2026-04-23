@@ -42,7 +42,7 @@ import {
   Square,
   MoreVertical
 } from 'lucide-react';
-import { analyzeKeyword, analyzeDiseaseCode, getFinancialLawGuide, generateBusinessCardSlogan, generateInsuranceAgeTip, getGeminiKey, getOpenAIKey } from '../services/geminiService';
+import { analyzeDiseaseCode, getFinancialLawGuide, generateBusinessCardSlogan, generateInsuranceAgeTip, getGeminiKey, getOpenAIKey } from '../services/geminiService';
 import { CalendarEvent } from '../types';
 
 const UsefulTools: React.FC<{ 
@@ -60,7 +60,6 @@ const UsefulTools: React.FC<{
     { id: 'calendar', label: '일정관리', icon: CalendarIcon, color: 'bg-indigo-600' },
     { id: 'business-card', label: '명함제작', icon: Contact2, color: 'bg-emerald-500' },
     { id: 'financial-law', label: '금소법 가이드', icon: ShieldAlert, color: 'bg-amber-500' },
-    { id: 'keyword-analysis', label: '키워드 분석', icon: TrendingUp, color: 'bg-indigo-500' },
     { id: 'disease-code', label: '질병코드분석', icon: Activity, color: 'bg-rose-500' },
   ];
 
@@ -78,7 +77,6 @@ const UsefulTools: React.FC<{
       );
       case 'business-card': return <BusinessCardTool />;
       case 'financial-law': return <FinancialLawTool />;
-      case 'keyword-analysis': return <KeywordAnalysisTool currentUser={currentUser} onUpdateUser={onUpdateUser} />;
       case 'disease-code': return <DiseaseCodeTool currentUser={currentUser} onUpdateUser={onUpdateUser} />;
       default: return null;
     }
@@ -1068,117 +1066,6 @@ const FinancialLawTool: React.FC = () => {
             <div className="pt-4 border-t border-white/10 flex items-center justify-between">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Penalty Info</span>
               <span className="text-xs font-bold text-rose-400">{result.penalty}</span>
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </div>
-  );
-};
-
-const KeywordAnalysisTool: React.FC<{ currentUser: any, onUpdateUser: (user: any) => void }> = ({ currentUser, onUpdateUser }) => {
-  const [keyword, setKeyword] = useState('');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [result, setResult] = useState<any>(null);
-
-  const handleAnalyze = async () => {
-    if (!keyword.trim()) return;
-    
-    const gemini = getGeminiKey();
-    const openai = getOpenAIKey();
-    if (!gemini && !openai) {
-      alert("API 키가 설정되지 않았습니다. [설정] 메뉴의 'AI 엔진 API 연동 설정'에서 Gemini 또는 OpenAI 키를 입력해주세요.");
-      return;
-    }
-
-    setIsAnalyzing(true);
-    try {
-      const data = await analyzeKeyword(keyword);
-      setResult(data);
-      
-      // Increment Golden System count
-      if (currentUser) {
-        onUpdateUser({
-          ...currentUser,
-          goldenSystemCount: (currentUser.goldenSystemCount || 0) + 1
-        });
-      }
-    } catch (e) {
-      alert('분석 중 오류가 발생했습니다.');
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  return (
-    <div className="space-y-10">
-      <div className="space-y-1">
-        <h3 className="text-2xl font-black text-slate-900 flex items-center gap-3">
-          <TrendingUp className="w-6 h-6 text-indigo-500" />
-          AI 키워드 심층 분석
-        </h3>
-        <p className="text-slate-500 text-sm font-medium">타겟 키워드의 경쟁력과 트렌드를 AI로 정밀 분석합니다.</p>
-      </div>
-
-      <div className="flex gap-4">
-        <input 
-          value={keyword} 
-          onChange={e => setKeyword(e.target.value)}
-          placeholder="분석할 키워드를 입력하세요 (예: 4세대 실손보험 전환)"
-          className="flex-1 p-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/5 transition-all text-sm"
-        />
-        <button 
-          onClick={handleAnalyze}
-          disabled={isAnalyzing}
-          className="px-8 py-4 bg-indigo-500 text-white font-bold rounded-2xl shadow-lg shadow-indigo-500/20 flex items-center gap-2 disabled:opacity-50"
-        >
-          {isAnalyzing ? <Clock className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-          분석하기
-        </button>
-      </div>
-
-      {result && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white border border-slate-100 rounded-3xl p-8 space-y-4 shadow-sm">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">검색량 및 경쟁도</h4>
-                <div className="flex items-end gap-4">
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-slate-500">검색량</p>
-                    <p className="text-2xl font-black text-indigo-600">{result.searchVolume}</p>
-                  </div>
-                  <div className="w-px h-8 bg-slate-100 mb-1"></div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-slate-500">경쟁도</p>
-                    <p className="text-2xl font-black text-slate-900">{result.competition}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white border border-slate-100 rounded-3xl p-8 space-y-4 shadow-sm">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">최근 트렌드</h4>
-                <p className="text-sm text-slate-600 leading-relaxed font-medium">{result.trend}</p>
-              </div>
-            </div>
-
-            <div className="bg-indigo-50 border border-indigo-100 rounded-3xl p-8 space-y-4">
-              <h4 className="font-bold text-indigo-900 flex items-center gap-2">
-                <Sparkles className="w-5 h-5" /> 추천 마케팅 전략
-              </h4>
-              <p className="text-indigo-800 text-sm leading-relaxed font-medium">{result.marketingStrategy}</p>
-            </div>
-          </div>
-
-          <div className="bg-white border border-slate-100 rounded-3xl p-8 space-y-6 shadow-sm">
-            <h4 className="font-bold text-slate-900 flex items-center gap-2 border-b border-slate-50 pb-4">
-              <TrendingUp className="w-5 h-5 text-indigo-500" /> 연관 키워드
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {result.relatedKeywords?.map((kw: string, i: number) => (
-                <span key={i} className="px-4 py-2 bg-slate-50 text-slate-600 text-xs font-bold rounded-xl border border-slate-100 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-100 transition-all cursor-pointer">
-                  #{kw}
-                </span>
-              ))}
             </div>
           </div>
         </motion.div>

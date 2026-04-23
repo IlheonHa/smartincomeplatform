@@ -17,7 +17,8 @@ import {
   X,
   Sparkles,
   Crown,
-  Wrench
+  Wrench,
+  Search
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -57,6 +58,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
     { id: 'introduction', label: 'Smart Income 소개', icon: Sparkles },
     { id: 'dashboard', label: '대시보드', icon: LayoutDashboard },
     { id: 'secret-room', label: 'Golden System', icon: Crown },
+    { id: 'keyword-analysis', label: '황금 키워드 분석', icon: Search },
     { id: 'marketing', label: 'AI 수익형 콘텐츠 생성', icon: Rocket },
     { id: 'lead-collection', label: '프리미엄홈페이지(DB수집)', icon: Magnet },
     { id: 'crm', label: '가망고객 관리(CRM)', icon: Users },

@@ -13,6 +13,7 @@ import Introduction from './views/Introduction';
 import LeadCollection from './views/LeadCollection';
 import UsefulTools from './views/UsefulTools';
 import GoldenKeywordWriting from './views/GoldenKeywordWriting';
+import KeywordAnalysis from './views/KeywordAnalysis';
 import PublicFormView from './views/PublicFormView';
 import Login from './views/Login';
 import Signup from './views/Signup';
@@ -1129,6 +1130,7 @@ const App: React.FC = () => {
       );
       case 'member-management': return <MemberManagement users={users} onUpdateUser={updateUser} onDeleteUser={deleteUser} onDeleteUsers={deleteUsers} onAddUser={handleSignup} onRefresh={() => fetchAllData(true)} />;
       case 'secret-room': return <SecretRoom user={currentUser} systemSettings={systemSettings} />;
+      case 'keyword-analysis': return <KeywordAnalysis currentUser={currentUser} onUpdateUser={updateUser} />;
       case 'golden-keyword-writing': return <GoldenKeywordWriting currentUser={currentUser} onUpdateUser={updateUser} />;
       case 'admin': return (
         <Admin 
