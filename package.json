@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.44.0",
+    "@netlify/functions": "^5.2.0",
     "@supabase/supabase-js": "^2.98.0",
     "@tailwindcss/vite": "^4.2.1",
     "@types/cors": "^2.8.19",
@@ -23,6 +24,7 @@
     "googleapis": "^171.4.0",
     "html-to-image": "^1.11.13",
     "lucide-react": "^0.575.0",
+    "node-fetch": "^3.3.2",
     "openai": "^6.22.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.4",

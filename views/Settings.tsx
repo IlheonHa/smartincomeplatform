@@ -181,97 +181,32 @@ const Settings: React.FC<SettingsProps> = ({ onLogout, user, onUpdateUser, syste
                 onClick={async () => {
                   try {
                     setTestStatus({ type: 'loading', message: '테스트 메일을 발송 중입니다...' });
-                    console.log('[Settings] Test email button clicked');
                     const emailAddress = user?.loginId || 'ilheonha@gmail.com';
                     const userResendKey = formData.apiKeys?.resend || user?.apiKeys?.resend;
-                    console.log(`[Settings] Attempting to send test email to: ${emailAddress}`);
                     
-                    const res = await fetch(`/api/test-email?email=${encodeURIComponent(emailAddress)}&apiKey=${encodeURIComponent(userResendKey || '')}`);
-                    
+                    const res = await fetch(`api/test-email?email=${encodeURIComponent(emailAddress)}&apiKey=${encodeURIComponent(userResendKey || '')}`);
                     const contentType = res.headers.get('content-type');
+
                     if (!res.ok || (contentType && contentType.includes('text/html'))) {
                       const errorText = await res.text();
-                      console.error('[Settings] Test email API error. Status:', res.status, 'ContentType:', contentType);
-                      
+                      let errorDetail = `서버 응답 오류 (${res.status})`;
                       if (contentType && contentType.includes('text/html')) {
-                        console.warn('[Settings] Server returned HTML. This usually means the backend is not running (e.g., on a static-only host like Netlify).');
-                        
-                        // Fallback: Try direct browser-side send to Resend if API key is available
-                        if (userResendKey && userResendKey.startsWith('re_')) {
-                          try {
-                            const resendRes = await fetch("https://api.resend.com/emails", {
-                              method: "POST",
-                              headers: {
-                                "Authorization": `Bearer ${userResendKey}`,
-                                "Content-Type": "application/json"
-                              },
-                              body: JSON.stringify({
-                                from: "onboarding@resend.dev",
-                                to: emailAddress,
-                                subject: "🚀 [Smart Insure Lab] 시스템 테스트 메일 (Direct Fallback)",
-                                html: `
-                                  <div style="font-family: sans-serif; padding: 20px;">
-                                    <h2>시스템 알림 테스트 (브라우저 직접 발송)</h2>
-                                    <p>서버를 거치지 않고 브라우저에서 직접 발송 시도된 테스트 메일입니다.</p>
-                                    <p>발송 시간: ${new Date().toLocaleString()}</p>
-                                  </div>
-                                `
-                              })
-                            });
-                            
-                            if (resendRes.ok) {
-                              setTestStatus({ 
-                                type: 'success', 
-                                message: `(브라우저 직접 발송 성공) 테스트 메일이 ${emailAddress}로 발송되었습니다.` 
-                              });
-                              return;
-                            } else {
-                              const resendErr = await resendRes.json().catch(() => ({ message: 'API rejected browser request' }));
-                              console.error('[Settings] Direct Resend error:', resendErr);
-                              setTestStatus({ 
-                                type: 'error', 
-                                message: `발송 실패: 서버가 응답하지 않으며, 브라우저 직접 발송도 보안 정책(CORS)으로 인해 거부되었습니다. Netlify Functions 기능을 활성화하거나 AI Studio 제공 URL을 사용하세요.` 
-                              });
-                              return;
-                            }
-                          } catch (fallbackErr: any) {
-                            console.error('[Settings] Fallback send failed:', fallbackErr);
-                            setTestStatus({ 
-                              type: 'error', 
-                              message: '발송 실패: 서버 응답 없음 + 브라우저 직접 발송 차단됨. (보안을 위해 Resend API는 서버를 통해서만 호출을 허용합니다. Netlify Functions 설정을 확인해 주세요.)' 
-                            });
-                            return;
-                          }
-                        }
-
-                        setTestStatus({ 
-                          type: 'error', 
-                          message: '발송 실패: 서버 응답이 없습니다. [설정]에서 Resend API 키를 입력하면 브라우저에서 직접 발송을 시도할 수 있습니다.' 
-                        });
-                      } else {
-                        setTestStatus({ 
-                          type: 'error', 
-                          message: `발송 실패 (서버 응답 오류): ${res.status}. 원인: ${errorText.substring(0, 100)}` 
-                        });
+                        errorDetail = '서버가 API 대신 페이지(HTML)를 반환했습니다. Netlify Functions 배포 상태를 확인해주세요.';
                       }
+
+                      setTestStatus({ type: 'error', message: `발송 실패: ${errorDetail}` });
                       return;
                     }
 
                     const data = await res.json();
-                    console.log('[Settings] Test email API response:', data);
-                    
                     if (data.success) {
-                      setTestStatus({ 
-                        type: 'success', 
-                        message: `테스트 메일이 ${emailAddress}로 발송되었습니다. 스팸함도 꼭 확인해주세요!` 
-                      });
+                      setTestStatus({ type: 'success', message: `테스트 메일이 ${emailAddress}로 발송되었습니다. 스팸함도 확인해주세요!` });
                     } else {
-                      const errorMsg = data.result?.message || data.error || JSON.stringify(data.result);
-                      setTestStatus({ type: 'error', message: `발송 실패: ${errorMsg}` });
+                      setTestStatus({ type: 'error', message: `발송 실패: ${data.error || '알 수 없는 서버 오류'}` });
                     }
                   } catch (err: any) {
-                    console.error('[Settings] Test email fetch error:', err);
-                    setTestStatus({ type: 'error', message: `네트워크 오류 또는 시스템 에러: ${err.message}` });
+                    console.error('[Settings] Test email error:', err);
+                    setTestStatus({ type: 'error', message: `네트워크 오류: ${err.message}` });
                   }
                 }}
                 className="w-full px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"

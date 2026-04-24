@@ -135,7 +135,8 @@ const App: React.FC = () => {
   const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
   const [loginLogs, setLoginLogs] = useState<LoginLog[]>([]);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Restore session on mount
   useEffect(() => {
@@ -153,76 +154,84 @@ const App: React.FC = () => {
 
   // Initial Data Fetch from Supabase with Local Fallback
   const fetchAllData = useCallback(async (silent = false) => {
-    if (!silent) setIsLoading(true);
-    console.log('[App] Starting data fetch...');
+    if (!silent) setIsSyncing(true);
+    console.log('[App] Starting data fetch. Silent:', silent);
     
+    // Safety timeout to ensure loading state is cleared even if something hangs
+    const safetyTimeout = setTimeout(() => {
+      if (!silent) {
+        console.warn('[App] fetchAllData safety timeout reached. Forcing isLoading = false');
+        setIsLoading(false);
+      }
+    }, 15000);
+
     try {
       // 1. Try Supabase with Timeout
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('FETCH_TIMEOUT')), 10000)
+        setTimeout(() => reject(new Error('FETCH_TIMEOUT')), 8000)
       );
 
       const fetchFromSupabase = (async () => {
-        console.log('[App] Attempting Supabase fetch with URL:', supabaseUrl);
+        console.log('[App] Attempting Supabase fetch...');
         
-        // Test connection first
-        const { error: connErr } = await supabase.from('users').select('count', { count: 'exact', head: true });
-        if (connErr) {
-          console.error('[App] Supabase connection test failed:', connErr);
-          throw new Error(`SUPABASE_CONNECTION_ERROR: ${connErr.message} (Code: ${connErr.code})`);
-        }
+        try {
+          // Test connection first
+          const { error: connErr } = await supabase.from('users').select('count', { count: 'exact', head: true });
+          if (connErr) {
+            console.error('[App] Supabase connection test failed:', connErr);
+            throw connErr;
+          }
+          console.log('[App] Supabase connection test passed');
 
-        const { data: userData, error: userErr } = await supabase.from('users').select('*');
-        if (userErr) {
-          console.error('[App] Supabase fetch users error:', userErr);
-          throw new Error(`SUPABASE_ERROR: ${userErr.message}`);
+          const { data: userData, error: userErr } = await supabase.from('users').select('*');
+          if (userErr) throw userErr;
+          
+          console.log('[App] Users fetched from Supabase:', userData?.length);
+
+          // Fetch other data in parallel
+          const [leadsRes, settingsRes, dashRes, notifRes, formsRes, pagesRes, calRes, logsRes] = await Promise.all([
+            supabase.from('leads').select('*').order('created_at', { ascending: false }),
+            supabase.from('system_settings').select('*').single(),
+            supabase.from('dashboard_data').select('*').single(),
+            supabase.from('notifications').select('*').order('created_at', { ascending: false }),
+            supabase.from('form_configs').select('*'),
+            supabase.from('landing_pages').select('*'),
+            supabase.from('calendar_events').select('*'),
+            supabase.from('login_logs').select('*').order('created_at', { ascending: false }).limit(100)
+          ]);
+          
+          return { 
+            userData, 
+            leadData: leadsRes.data, 
+            settingsData: settingsRes.data, 
+            dashData: dashRes.data, 
+            notifData: notifRes.data, 
+            formData: formsRes.data, 
+            landingPages: pagesRes.data, 
+            calData: calRes.data, 
+            logData: logsRes.data 
+          };
+        } catch (e) {
+          console.error('[App] Supabase fetch logic error:', e);
+          throw e;
         }
-        
-        const { data: leadData, error: leadErr } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
-        if (leadErr) console.error('[App] Supabase fetch leads error:', leadErr);
-        
-        const { data: settingsData, error: setErr } = await supabase.from('system_settings').select('*').single();
-        if (setErr) console.error('[App] Supabase fetch settings error:', setErr);
-        
-        const { data: dashData, error: dashErr } = await supabase.from('dashboard_data').select('*').single();
-        if (dashErr) console.error('[App] Supabase fetch dashboard error:', dashErr);
-        
-        const { data: notifData, error: notifErr } = await supabase.from('notifications').select('*').order('created_at', { ascending: false });
-        if (notifErr) console.error('[App] Supabase fetch notifications error:', notifErr);
-        
-        const { data: formData, error: formErr } = await supabase.from('form_configs').select('*');
-        if (formErr) console.error('[App] Supabase fetch form_configs error:', formErr);
-        
-        const { data: landingPages, error: lpErr } = await supabase.from('landing_pages').select('*');
-        if (lpErr) console.error('[App] Supabase fetch landing_pages error:', lpErr);
-        
-        const { data: calData, error: calErr } = await supabase.from('calendar_events').select('*');
-        if (calErr) console.error('[App] Supabase fetch calendar_events error:', calErr);
-        
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        const { data: logData, error: logErr } = await supabase
-          .from('login_logs')
-          .select('*')
-          .gte('created_at', sevenDaysAgo.toISOString())
-          .order('created_at', { ascending: false })
-          .limit(100);
-        if (logErr) console.error('[App] Supabase fetch login_logs error:', logErr);
-        
-        return { userData, leadData, settingsData, dashData, notifData, formData, landingPages, calData, logData };
       })();
 
       let fetchedUsers: User[] = [];
 
       try {
-        const { userData, leadData, settingsData, dashData, notifData, formData, landingPages, calData, logData }: any = await Promise.race([fetchFromSupabase, timeoutPromise]);
+        console.log('[App] Racing Supabase fetch against timeout...');
+        const res: any = await Promise.race([fetchFromSupabase, timeoutPromise]);
+        console.log('[App] Race finished');
+        
+        const { userData, leadData, settingsData, dashData, notifData, formData, landingPages, calData, logData } = res;
         
         if (userData) {
           fetchedUsers = userData.map(toCamelCase);
           setUsers(fetchedUsers);
           
-          // Sync to local server for backend features like email notifications
-          fetch('/api/users', {
+          // Sync to local server (non-blocking)
+          fetch('api/users', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(fetchedUsers)
@@ -242,25 +251,45 @@ const App: React.FC = () => {
         console.warn('[App] Supabase fetch failed or timed out, falling back to local server...', supaErr.message);
         
         // 2. Fallback to Local Express Server
-        const [uRes, lRes, sRes] = await Promise.all([
-          fetch('/api/users').catch(() => null),
-          fetch('/api/leads').catch(() => null),
-          fetch('/api/schedules').catch(() => null)
-        ]);
+        try {
+          const fetchWithTimeout = async (url: string, timeout = 5000) => {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+            try {
+              const response = await fetch(url, { signal: controller.signal });
+              clearTimeout(id);
+              return response;
+            } catch (e) {
+              clearTimeout(id);
+              throw e;
+            }
+          };
 
-        if (uRes && uRes.ok) {
-          fetchedUsers = (await uRes.json()).map(toCamelCase);
-          setUsers(fetchedUsers);
+          const [uRes, lRes, sRes] = await Promise.all([
+            fetchWithTimeout('api/users').catch(() => null),
+            fetchWithTimeout('api/leads').catch(() => null),
+            fetchWithTimeout('api/schedules').catch(() => null)
+          ]);
+
+          if (uRes && uRes.ok) {
+            fetchedUsers = (await uRes.json()).map(toCamelCase);
+            setUsers(fetchedUsers);
+          }
+          if (lRes && lRes.ok) setLeads((await lRes.json()).map(toCamelCase));
+          if (sRes && sRes.ok) setCalendarEvents((await sRes.json()).map(toCamelCase));
+          
+          console.log('[App] Local server fallback fetch completed');
+        } catch (fallbackErr) {
+          console.error('[App] Local fallback fetch also failed:', fallbackErr);
         }
-        if (lRes && lRes.ok) setLeads((await lRes.json()).map(toCamelCase));
-        if (sRes && sRes.ok) setCalendarEvents((await sRes.json()).map(toCamelCase));
-        
-        console.log('[App] Local server fallback fetch completed');
       }
     } catch (error) {
       console.error('[App] Critical error in fetchAllData:', error);
     } finally {
-      setIsLoading(false);
+      clearTimeout(safetyTimeout);
+      setIsSyncing(false);
+      setIsLoading(false); // For backward compatibility and safety
+      console.log('[App] fetchAllData finished');
     }
   }, []);
 
@@ -627,7 +656,7 @@ const App: React.FC = () => {
         console.error('[App] Database save failed:', dbError.message, dbError.details, dbError.hint);
         // Fallback to local server if Supabase fails
         try {
-          const response = await fetch('/api/users', {
+          const response = await fetch('api/users', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify([...users, newUser])
@@ -1156,7 +1185,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <Layout activeTab={activeTab} setActiveTab={setActiveTab} user={currentUser} onLogout={handleLogout} notifications={notifications}>
+    <Layout activeTab={activeTab} setActiveTab={setActiveTab} user={currentUser} onLogout={handleLogout} notifications={notifications} isSyncing={isSyncing}>
       {renderContent()}
     </Layout>
   );

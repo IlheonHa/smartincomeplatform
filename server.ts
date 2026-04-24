@@ -287,7 +287,7 @@ async function startServer() {
     }
   });
 
-  // Test Email Route
+  // Test Email Route - simplify back to standard path
   app.get('/api/test-email', async (req, res) => {
     const { email, apiKey } = req.query;
     const targetEmail = email ? String(email) : 'ilheonha@gmail.com';

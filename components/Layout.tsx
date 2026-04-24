@@ -28,6 +28,7 @@ interface LayoutProps {
   user?: User | null;
   onLogout: () => void;
   notifications?: any[];
+  isSyncing?: boolean;
 }
 
 const Logo: React.FC = () => (
@@ -43,7 +44,7 @@ const Logo: React.FC = () => (
   </div>
 );
 
-const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user, onLogout, notifications = [] }) => {
+const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user, onLogout, notifications = [], isSyncing = false }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const userRole = user?.role;
@@ -224,8 +225,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
           </div>
           <div className="flex items-center gap-3 lg:gap-6">
             <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-accent/10 rounded-full border border-accent/20">
-              <div className="w-2 h-2 rounded-full bg-accent animate-pulse"></div>
-              <span className="text-[11px] font-bold text-accent-dark uppercase tracking-widest">System Online</span>
+              <div className={`w-2 h-2 rounded-full ${isSyncing ? 'bg-amber-400 animate-spin' : 'bg-accent animate-pulse'}`}></div>
+              <span className="text-[11px] font-bold text-accent-dark uppercase tracking-widest">
+                {isSyncing ? 'Synchronizing...' : 'System Online'}
+              </span>
             </div>
             <div className="hidden md:block h-8 w-px bg-slate-200"></div>
             <button 
