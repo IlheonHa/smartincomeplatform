@@ -194,7 +194,7 @@ const Settings: React.FC<SettingsProps> = ({ onLogout, user, onUpdateUser, syste
                       console.error('[Settings] Test email API error. Status:', res.status, 'ContentType:', contentType);
                       
                       if (contentType && contentType.includes('text/html')) {
-                        console.warn('[Settings] Server returned HTML. Attempting client-side fallback send...');
+                        console.warn('[Settings] Server returned HTML. This usually means the backend is not running (e.g., on a static-only host like Netlify).');
                         
                         // Fallback: Try direct browser-side send to Resend if API key is available
                         if (userResendKey && userResendKey.startsWith('re_')) {
@@ -208,11 +208,11 @@ const Settings: React.FC<SettingsProps> = ({ onLogout, user, onUpdateUser, syste
                               body: JSON.stringify({
                                 from: "onboarding@resend.dev",
                                 to: emailAddress,
-                                subject: "🚀 [Smart Insure Lab] 시스템 테스트 메일 (Direct)",
+                                subject: "🚀 [Smart Insure Lab] 시스템 테스트 메일 (Direct Fallback)",
                                 html: `
                                   <div style="font-family: sans-serif; padding: 20px;">
-                                    <h2>시스템 알림 테스트 (직접 발송)</h2>
-                                    <p>서버를 거치지 않고 브라우저에서 직접 발송된 테스트 메일입니다.</p>
+                                    <h2>시스템 알림 테스트 (브라우저 직접 발송)</h2>
+                                    <p>서버를 거치지 않고 브라우저에서 직접 발송 시도된 테스트 메일입니다.</p>
                                     <p>발송 시간: ${new Date().toLocaleString()}</p>
                                   </div>
                                 `
@@ -226,11 +226,11 @@ const Settings: React.FC<SettingsProps> = ({ onLogout, user, onUpdateUser, syste
                               });
                               return;
                             } else {
-                              const resendErr = await resendRes.json().catch(() => ({ message: 'Unknown error' }));
+                              const resendErr = await resendRes.json().catch(() => ({ message: 'API rejected browser request' }));
                               console.error('[Settings] Direct Resend error:', resendErr);
                               setTestStatus({ 
                                 type: 'error', 
-                                message: `발송 실패: 서버가 응답하지 않으며, 브라우저 직접 발송도 실패했습니다 (${resendErr.message || resendRes.status}).` 
+                                message: `발송 실패: 서버가 응답하지 않으며, 브라우저 직접 발송도 보안 정책(CORS)으로 인해 거부되었습니다. Netlify Functions 기능을 활성화하거나 AI Studio 제공 URL을 사용하세요.` 
                               });
                               return;
                             }
@@ -238,7 +238,7 @@ const Settings: React.FC<SettingsProps> = ({ onLogout, user, onUpdateUser, syste
                             console.error('[Settings] Fallback send failed:', fallbackErr);
                             setTestStatus({ 
                               type: 'error', 
-                              message: '발송 실패: 서버가 응답하지 않으며, 브라우저 직접 발송 시도 중 오류가 발생했습니다. (CORS 보안 설정 때문일 수 있습니다)' 
+                              message: '발송 실패: 서버 응답 없음 + 브라우저 직접 발송 차단됨. (보안을 위해 Resend API는 서버를 통해서만 호출을 허용합니다. Netlify Functions 설정을 확인해 주세요.)' 
                             });
                             return;
                           }

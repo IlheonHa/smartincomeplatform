@@ -89,6 +89,10 @@ async function startServer() {
 
   // API Routes - Now using standard paths thanks to the middleware above
   
+  app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString(), env: process.env.NODE_ENV });
+  });
+
   app.get('/api/forms/:id', (req, res) => {
     const { id } = req.params;
     console.log(`[API] GET Form ID: ${id}`);
