@@ -188,13 +188,72 @@ const Settings: React.FC<SettingsProps> = ({ onLogout, user, onUpdateUser, syste
                     
                     const res = await fetch(`/api/test-email?email=${encodeURIComponent(emailAddress)}&apiKey=${encodeURIComponent(userResendKey || '')}`);
                     
-                    if (!res.ok) {
+                    const contentType = res.headers.get('content-type');
+                    if (!res.ok || (contentType && contentType.includes('text/html'))) {
                       const errorText = await res.text();
-                      console.error('[Settings] Test email API error status:', res.status, errorText);
-                      setTestStatus({ 
-                        type: 'error', 
-                        message: `발송 실패 (서버 응답 오류): ${res.status}. 원인: ${errorText.substring(0, 50)}...` 
-                      });
+                      console.error('[Settings] Test email API error. Status:', res.status, 'ContentType:', contentType);
+                      
+                      if (contentType && contentType.includes('text/html')) {
+                        console.warn('[Settings] Server returned HTML. Attempting client-side fallback send...');
+                        
+                        // Fallback: Try direct browser-side send to Resend if API key is available
+                        if (userResendKey && userResendKey.startsWith('re_')) {
+                          try {
+                            const resendRes = await fetch("https://api.resend.com/emails", {
+                              method: "POST",
+                              headers: {
+                                "Authorization": `Bearer ${userResendKey}`,
+                                "Content-Type": "application/json"
+                              },
+                              body: JSON.stringify({
+                                from: "onboarding@resend.dev",
+                                to: emailAddress,
+                                subject: "🚀 [Smart Insure Lab] 시스템 테스트 메일 (Direct)",
+                                html: `
+                                  <div style="font-family: sans-serif; padding: 20px;">
+                                    <h2>시스템 알림 테스트 (직접 발송)</h2>
+                                    <p>서버를 거치지 않고 브라우저에서 직접 발송된 테스트 메일입니다.</p>
+                                    <p>발송 시간: ${new Date().toLocaleString()}</p>
+                                  </div>
+                                `
+                              })
+                            });
+                            
+                            if (resendRes.ok) {
+                              setTestStatus({ 
+                                type: 'success', 
+                                message: `(브라우저 직접 발송 성공) 테스트 메일이 ${emailAddress}로 발송되었습니다.` 
+                              });
+                              return;
+                            } else {
+                              const resendErr = await resendRes.json().catch(() => ({ message: 'Unknown error' }));
+                              console.error('[Settings] Direct Resend error:', resendErr);
+                              setTestStatus({ 
+                                type: 'error', 
+                                message: `발송 실패: 서버가 응답하지 않으며, 브라우저 직접 발송도 실패했습니다 (${resendErr.message || resendRes.status}).` 
+                              });
+                              return;
+                            }
+                          } catch (fallbackErr: any) {
+                            console.error('[Settings] Fallback send failed:', fallbackErr);
+                            setTestStatus({ 
+                              type: 'error', 
+                              message: '발송 실패: 서버가 응답하지 않으며, 브라우저 직접 발송 시도 중 오류가 발생했습니다. (CORS 보안 설정 때문일 수 있습니다)' 
+                            });
+                            return;
+                          }
+                        }
+
+                        setTestStatus({ 
+                          type: 'error', 
+                          message: '발송 실패: 서버 응답이 없습니다. [설정]에서 Resend API 키를 입력하면 브라우저에서 직접 발송을 시도할 수 있습니다.' 
+                        });
+                      } else {
+                        setTestStatus({ 
+                          type: 'error', 
+                          message: `발송 실패 (서버 응답 오류): ${res.status}. 원인: ${errorText.substring(0, 100)}` 
+                        });
+                      }
                       return;
                     }
 
