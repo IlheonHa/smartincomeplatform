@@ -1806,8 +1806,8 @@ const LeadCollection: React.FC<{
   const [leadFilterSource, setLeadFilterSource] = useState<string | null>(null);
   const [qrCodeData, setQrCodeData] = useState<{ url: string; name: string } | null>(null);
 
-  const leads = (isAdmin ? allLeads : allLeads.filter(l => l.userId === currentUser.id))
-    .filter(l => {
+  const userLeads = isAdmin ? allLeads : allLeads.filter(l => l.userId === currentUser.id);
+  const leads = userLeads.filter(l => {
       const matchesSearch = l.name.toLowerCase().includes(leadSearchTerm.toLowerCase()) || 
                            l.phone.includes(leadSearchTerm);
       const matchesSource = leadFilterSource ? l.source === leadFilterSource : true;
@@ -1958,6 +1958,7 @@ const LeadCollection: React.FC<{
       status: LeadStatus.NEW,
       priority: 'MEDIUM',
       source: '프리미엄 홈페이지: ' + (savedFormConfigs.find(f => f.id === response.formId)?.name || '기본 폼'),
+      formId: response.formId,
       formData: response.formData,
       submittedAt: response.submittedAt
     };
@@ -2119,7 +2120,10 @@ const LeadCollection: React.FC<{
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {savedFormConfigs.map((config) => {
-              const formLeads = leads.filter(l => l.source === `프리미엄 홈페이지: ${config.name}`);
+              const formLeads = userLeads.filter(l => 
+                (l.formId === config.id && l.userId === config.userId) || 
+                (l.source === `프리미엄 홈페이지: ${config.name}` && l.userId === config.userId)
+              );
               return (
                 <motion.div 
                   key={config.id}

@@ -152,6 +152,7 @@ const PublicFormView: React.FC = () => {
         status: LeadStatus.NEW,
         priority: 'MEDIUM',
         source: `프리미엄 홈페이지: ${formConfig.name}`,
+        form_id: formConfig.id,
         notes: formConfig.fields.map((f: any) => `${f.label}: ${formData[f.id] || ''}`).join('\n'),
         form_data: mappedData,
         created_at: new Date().toISOString()

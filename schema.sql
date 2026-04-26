@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS public.leads (
     last_contact_date TEXT,
     next_follow_up_date TEXT,
     estimated_value NUMERIC DEFAULT 0,
+    form_id TEXT REFERENCES public.form_configs(id) ON DELETE SET NULL,
     form_data JSONB DEFAULT '{}'::jsonb
 );
 

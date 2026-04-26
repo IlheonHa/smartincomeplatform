@@ -78,6 +78,7 @@ export interface Lead {
   status: LeadStatus;
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
   source: string;
+  formId?: string; // Added: Associate with a specific form configuration
   notes?: string;
   formData?: Record<string, any>; // Added: Flexible form data storage
   createdAt: string;
