@@ -184,14 +184,14 @@ const Settings: React.FC<SettingsProps> = ({ onLogout, user, onUpdateUser, syste
                     const emailAddress = user?.loginId || 'ilheonha@gmail.com';
                     const userResendKey = formData.apiKeys?.resend || user?.apiKeys?.resend;
                     
-                    const res = await fetch(`api/test-email?email=${encodeURIComponent(emailAddress)}&apiKey=${encodeURIComponent(userResendKey || '')}`);
+                    const res = await fetch(`/api/test-email?email=${encodeURIComponent(emailAddress)}&apiKey=${encodeURIComponent(userResendKey || '')}`);
                     const contentType = res.headers.get('content-type');
 
                     if (!res.ok || (contentType && contentType.includes('text/html'))) {
                       const errorText = await res.text();
                       let errorDetail = `서버 응답 오류 (${res.status})`;
                       if (contentType && contentType.includes('text/html')) {
-                        errorDetail = '서버가 API 대신 페이지(HTML)를 반환했습니다. Netlify Functions 배포 상태를 확인해주세요.';
+                        errorDetail = '서버가 API 대신 페이지(HTML)를 반환했습니다. 서버 설정이나 경로를 확인해주세요.';
                       }
 
                       setTestStatus({ type: 'error', message: `발송 실패: ${errorDetail}` });

@@ -231,7 +231,7 @@ const App: React.FC = () => {
           setUsers(fetchedUsers);
           
           // Sync to local server (non-blocking)
-          fetch('api/users', {
+          fetch('/api/users', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(fetchedUsers)
@@ -266,9 +266,9 @@ const App: React.FC = () => {
           };
 
           const [uRes, lRes, sRes] = await Promise.all([
-            fetchWithTimeout('api/users').catch(() => null),
-            fetchWithTimeout('api/leads').catch(() => null),
-            fetchWithTimeout('api/schedules').catch(() => null)
+            fetchWithTimeout('/api/users').catch(() => null),
+            fetchWithTimeout('/api/leads').catch(() => null),
+            fetchWithTimeout('/api/schedules').catch(() => null)
           ]);
 
           if (uRes && uRes.ok) {
@@ -656,7 +656,7 @@ const App: React.FC = () => {
         console.error('[App] Database save failed:', dbError.message, dbError.details, dbError.hint);
         // Fallback to local server if Supabase fails
         try {
-          const response = await fetch('api/users', {
+          const response = await fetch('/api/users', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify([...users, newUser])
